@@ -28,7 +28,8 @@ COPY tests ./tests
 CMD ["pytest", "-q"]
 
 FROM base AS runtime
-RUN useradd --create-home --uid 10001 appuser
+RUN addgroup -S -g 10001 appgroup \
+    && adduser -S -u 10001 -G appgroup appuser
 COPY app ./app
 USER appuser
 
