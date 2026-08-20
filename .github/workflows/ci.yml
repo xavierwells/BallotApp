@@ -33,11 +33,11 @@ jobs:
         with:
           python-version: "3.13"
       - name: Verify direct dependency approvals
-        run: python3 scripts/check_direct_dependency_approvals.py
+        run: python scripts/check_direct_dependency_approvals.py
       - name: Test the API contract and browser CORS preflight
         run: |
-          python3 -m pip install --disable-pip-version-check --require-hashes -r apps/api/requirements-dev.lock
-          cd apps/api && python3 -m pytest -q
+          python -m pip install --disable-pip-version-check --require-hashes -r apps/api/requirements-dev.lock
+          cd apps/api && python -m pytest -q
       - name: Build the web application from the lockfile
         run: |
           cd apps/web && npm ci --omit=optional && npm run build
@@ -51,8 +51,8 @@ jobs:
           python-version: "3.13"
       - name: Audit Python dependencies
         run: |
-          python3 -m pip install --disable-pip-version-check pip-audit==2.10.0
-          python3 -m pip_audit -r apps/api/requirements.lock
+          python -m pip install --disable-pip-version-check pip-audit==2.10.0
+          python -m pip_audit -r apps/api/requirements.lock
       - name: Audit web dependencies from the lockfile
         run: cd apps/web && npm ci --ignore-scripts --omit=optional && npm audit --omit=dev --omit=optional --audit-level=high
       - name: Scan source for secrets, configuration, vulnerabilities, and licenses
