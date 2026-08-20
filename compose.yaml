@@ -35,6 +35,7 @@ services:
     volumes:
       - document_data:/var/lib/ballot/documents
       - ./data/authorities:/app/data/authorities:ro
+      - ./data/boundaries:/app/data/boundaries:ro
     depends_on:
       migrate:
         condition: service_completed_successfully

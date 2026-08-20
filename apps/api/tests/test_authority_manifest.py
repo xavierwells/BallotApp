@@ -27,17 +27,15 @@ def test_copperas_cove_manifest_has_the_required_pilot_authorities() -> None:
         "lampasas-county",
         "copperas-cove-isd",
         "texas-secretary-of-state-elections",
+        "texas-legislative-council",
     } <= authority_slugs
     assert all(
         source.get("approvalStatus", "pending_review") == "pending_review"
         for authority in manifest["authorities"]
         for source in authority["sources"]
     )
-    assert all(
-        source["monitoringClass"] == "active_election"
-        for authority in manifest["authorities"]
-        for source in authority["sources"]
-    )
+    tlc = next(authority for authority in manifest["authorities"] if authority["slug"] == "texas-legislative-council")
+    assert tlc["sources"][0]["monitoringClass"] == "reference"
     assert all(
         source["permittedUse"] == "direct_link_manual_check"
         for authority in manifest["authorities"]

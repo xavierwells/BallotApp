@@ -102,6 +102,22 @@
           "permittedUse": "direct_link_manual_check"
         }
       ]
+    },
+    {
+      "slug": "texas-legislative-council",
+      "name": "Texas Legislative Council",
+      "authorityType": "state",
+      "officialWebsiteUrl": "https://data.capitol.texas.gov/dataset/precincts",
+      "sources": [
+        {
+          "slug": "precincts-2026-primary",
+          "name": "2026 Primary Election Precincts",
+          "sourceUrl": "https://data.capitol.texas.gov/dataset/d04c72b9-16c4-4ab2-8c6d-c666d41e04b7/resource/33ec5b30-ee4d-424f-9769-57b87cb5e311/download/precincts26p.zip",
+          "sourceCategory": "boundaries",
+          "monitoringClass": "reference",
+          "permittedUse": "direct_link_manual_check"
+        }
+      ]
     }
   ]
 }

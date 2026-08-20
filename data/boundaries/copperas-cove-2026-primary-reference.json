@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "organizationSlug": "whats-on-my-ballot",
+  "publicationSlug": "copperas-cove",
+  "publisherSlug": "texas-legislative-council",
+  "sourceSlug": "precincts-2026-primary",
+  "sourceUrl": "https://data.capitol.texas.gov/dataset/d04c72b9-16c4-4ab2-8c6d-c666d41e04b7/resource/33ec5b30-ee4d-424f-9769-57b87cb5e311/download/precincts26p.zip",
+  "sha256": "70a67743d55a218ba5ce6057816563376f61cf0bc531a77d1edc98644c310107",
+  "title": "Texas Legislative Council 2026 Primary Election Precincts",
+  "publisherName": "Texas Legislative Council",
+  "areaType": "voting_precinct",
+  "sourceSrid": 3081,
+  "identifierField": "PCTKEY",
+  "nameField": "PREC",
+  "effectiveDate": null,
+  "resolutionEligibility": "reference_only",
+  "applicabilityWarning": "This statewide reference represents 2026 primary-election precincts. It must not be verified for the November 2026 resolver without confirmation from each responsible county or a superseding general-election source.",
+  "imports": [
+    {
+      "subjectSlug": "bell-county",
+      "filterField": "CNTY",
+      "filterValue": "27",
+      "expectedFeatureCount": 72
+    },
+    {
+      "subjectSlug": "coryell-county",
+      "filterField": "CNTY",
+      "filterValue": "99",
+      "expectedFeatureCount": 16
+    },
+    {
+      "subjectSlug": "lampasas-county",
+      "filterField": "CNTY",
+      "filterValue": "281",
+      "expectedFeatureCount": 10
+    }
+  ]
+}

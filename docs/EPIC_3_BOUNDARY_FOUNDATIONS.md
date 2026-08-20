@@ -52,11 +52,13 @@ only and must not put them in logs, analytics, queues, or support records.
 
 ## Pilot source policy
 
-The schema is ready for future imports, but the initial-launch policy remains:
-direct links and manual checks only. Do not load real geometry until the
-boundary-source go/no-go review confirms authority, completeness, permitted
-use, attribution, retention, and redistribution terms. All automated tests use
-invented geometry near an invented point; they use no real voter information.
+The boundary-source review now permits private reference imports with retained
+provenance. TLC's 2026-primary precinct source is pinned in a repeatable pilot
+manifest, but it remains draft/reference geometry and is not eligible for the
+November resolver until the responsible county confirms applicability or a
+superseding general-election source is reviewed. Public source redistribution
+remains metadata-only. Automated tests still use invented geometry and no real
+voter information.
 
 ## Verify locally
 

@@ -20,8 +20,9 @@ def slugify(value: str) -> str:
     return slug[:120].rstrip("-")
 
 
-def import_boundaries(arguments: argparse.Namespace) -> int:
-    content = download_exact_https(arguments.source_url, arguments.sha256)
+def import_boundaries(arguments: argparse.Namespace, *, content: bytes | None = None) -> int:
+    if content is None:
+        content = download_exact_https(arguments.source_url, arguments.sha256)
     features = read_shapefile_zip(
         content,
         identifier_field=arguments.identifier_field,
@@ -32,13 +33,12 @@ def import_boundaries(arguments: argparse.Namespace) -> int:
     if not arguments.apply:
         return len(features)
 
-    stored = document_store_from_environment().put_bytes(content)
     with get_engine().begin() as connection:
         source = connection.execute(
             text(
                 "SELECT publications.id AS publication_id, publisher.id AS publisher_authority_id, "
                 "subject.id AS subject_authority_id, registry.id AS registry_id, "
-                "registry.approval_status, registry.permitted_use "
+                "registry.approval_status, registry.permitted_use, registry.source_url AS registered_source_url "
                 "FROM organizations "
                 "JOIN publications ON publications.organization_id = organizations.id "
                 "JOIN election_authorities publisher ON publisher.publication_id = publications.id "
@@ -57,9 +57,39 @@ def import_boundaries(arguments: argparse.Namespace) -> int:
             raise ValueError("boundary source registry entry must be approved before import")
         if source["permitted_use"] not in {"private_retention", "public_copy"}:
             raise ValueError("boundary source review does not permit retaining the source artifact")
+        if source["registered_source_url"] != arguments.source_url:
+            raise ValueError("boundary artifact URL does not match the reviewed source registry entry")
+
+        existing_imports = connection.execute(
+            text(
+                "SELECT boundary_datasets.id, COUNT(boundary_versions.id) AS feature_count "
+                "FROM boundary_datasets "
+                "JOIN documents ON documents.id = boundary_datasets.source_document_id "
+                "LEFT JOIN boundary_versions ON boundary_versions.boundary_dataset_id = boundary_datasets.id "
+                "WHERE boundary_datasets.publisher_authority_id = :publisher_authority_id "
+                "AND boundary_datasets.subject_authority_id = :subject_authority_id "
+                "AND boundary_datasets.authority_source_registry_id = :registry_id "
+                "AND boundary_datasets.source_url = :source_url "
+                "AND documents.checksum_sha256 = :checksum "
+                "GROUP BY boundary_datasets.id"
+            ),
+            {**source, "source_url": arguments.source_url, "checksum": arguments.sha256},
+        ).mappings().all()
+        if len(existing_imports) > 1:
+            raise ValueError("multiple existing imports were found for this pinned county dataset")
+        if existing_imports:
+            existing_count = existing_imports[0]["feature_count"]
+            if existing_count != len(features):
+                raise ValueError(
+                    f"existing pinned county import has {existing_count} boundaries; expected {len(features)}"
+                )
+            return len(features)
+
+        stored = document_store_from_environment().put_bytes(content)
 
         document_id = connection.execute(
             text(
+                "WITH inserted AS ("
                 "INSERT INTO documents "
                 "(id, publication_id, election_authority_id, authority_source_registry_id, source_type, "
                 "title, publisher_name, source_url, storage_key, checksum_sha256, retrieved_at, "
@@ -67,8 +97,11 @@ def import_boundaries(arguments: argparse.Namespace) -> int:
                 "VALUES (gen_random_uuid(), :publication_id, :publisher_authority_id, :registry_id, "
                 "'official_document', :title, :publisher_name, :source_url, :storage_key, :checksum, "
                 ":retrieved_at, FALSE, 'retained', 'metadata_only', :content_length) "
-                "ON CONFLICT (publication_id, checksum_sha256) DO UPDATE "
-                "SET checksum_sha256 = EXCLUDED.checksum_sha256 RETURNING id"
+                "ON CONFLICT (publication_id, checksum_sha256) DO NOTHING RETURNING id"
+                ") SELECT id FROM inserted "
+                "UNION ALL SELECT id FROM documents "
+                "WHERE publication_id = :publication_id AND checksum_sha256 = :checksum "
+                "LIMIT 1"
             ),
             {
                 **source,

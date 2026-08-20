@@ -176,6 +176,13 @@ def bootstrap(manifest: dict[str, Any]) -> tuple[int, int]:
                             ),
                             {"source_id": existing["id"]},
                         )
+                    elif (
+                        requested_use == "direct_link_manual_check"
+                        and existing["permitted_use"] in {"private_retention", "public_copy"}
+                    ):
+                        # A recorded source review may broaden bootstrap's
+                        # minimum scope. Never downgrade that reviewed choice.
+                        pass
                     elif existing["permitted_use"] != requested_use:
                         raise RuntimeError(
                             f"source {authority['slug']}/{source['slug']} use scope has changed; "
