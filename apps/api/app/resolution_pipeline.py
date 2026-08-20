@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 import os
 from typing import Protocol
 from uuid import UUID
@@ -219,6 +219,57 @@ class ResolutionPipeline:
         )
 
 
+class SyntheticDemoResolutionPipeline:
+    """Development-only visual fixture; never represents an official ballot."""
+
+    def resolve(self, address: str) -> BallotResolutionResponse:
+        del address
+        checked_at = datetime(2026, 8, 20, tzinfo=UTC)
+        source = SourceCitation(
+            authority_name="Synthetic demo authority — not official",
+            source_url="https://example.test/ballotapp-synthetic-demo",
+            checked_at=checked_at,
+            source_label="Invented source used only for interface review",
+        )
+        return ResolvedBallotResponse(
+            demonstration=True,
+            confidence=100,
+            ballot=BallotChoice(
+                ballot_version_id=UUID("00000000-0000-0000-0000-000000000100"),
+                label="DEMO — Synthetic Copperas Cove-style ballot",
+                election_name="Synthetic November 2026 Election",
+                election_date=date(2026, 11, 3),
+                official_source=source,
+            ),
+            supported_by=[
+                GeographicSupport(
+                    geographic_area_id=UUID("00000000-0000-0000-0000-000000000010"),
+                    area_type="municipality",
+                    name="Synthetic City Area",
+                    boundary_version_id=UUID("10000000-0000-0000-0000-000000000010"),
+                    explanation="Invented point-in-polygon match for interface review only.",
+                    source=source,
+                ),
+                GeographicSupport(
+                    geographic_area_id=UUID("00000000-0000-0000-0000-000000000011"),
+                    area_type="voting_precinct",
+                    name="Synthetic Precinct 101",
+                    boundary_version_id=UUID("10000000-0000-0000-0000-000000000011"),
+                    explanation="Invented precinct membership for interface review only.",
+                    source=source,
+                ),
+                GeographicSupport(
+                    geographic_area_id=UUID("00000000-0000-0000-0000-000000000012"),
+                    area_type="school_district",
+                    name="Synthetic School District",
+                    boundary_version_id=UUID("10000000-0000-0000-0000-000000000012"),
+                    explanation="Invented school-district membership for interface review only.",
+                    source=source,
+                ),
+            ],
+        )
+
+
 def _support(membership: BoundaryMembership) -> GeographicSupport:
     return GeographicSupport(
         geographic_area_id=membership.geographic_area_id,
@@ -235,7 +286,10 @@ def _support(membership: BoundaryMembership) -> GeographicSupport:
     )
 
 
-def pipeline_from_environment() -> ResolutionPipeline:
+def pipeline_from_environment() -> ResolutionPipeline | SyntheticDemoResolutionPipeline:
+    demo_enabled = os.getenv("BALLOT_RESOLUTION_DEMO_ENABLED", "false").strip().lower() == "true"
+    if demo_enabled and os.getenv("APP_ENV", "development").strip().lower() == "development":
+        return SyntheticDemoResolutionPipeline()
     publication = os.getenv("BALLOT_RESOLUTION_PUBLICATION_ID", "").strip()
     election = os.getenv("BALLOT_RESOLUTION_ELECTION_ID", "").strip()
     election_date = os.getenv("BALLOT_RESOLUTION_ELECTION_DATE", "").strip()

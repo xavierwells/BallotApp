@@ -3,8 +3,20 @@
 node_modules
 .next
 
+# Test tools can create caches in the current directory even though this is a
+# Node application. They are never inputs to the production web image.
+.pytest_cache
+**/.pytest_cache
+__pycache__
+**/__pycache__
+*.py[cod]
+coverage
+test-results
+playwright-report
+
 # Build context must not contain local credentials or repository metadata.
 .env
 .env.*
 .git
 npm-debug.log*
+*.log

@@ -6,7 +6,11 @@ from app.schemas.ballot_resolution import (
     BallotResolutionResponse,
     BrowseAreaType,
 )
-from app.resolution_pipeline import ResolutionPipeline, pipeline_from_environment
+from app.resolution_pipeline import (
+    ResolutionPipeline,
+    SyntheticDemoResolutionPipeline,
+    pipeline_from_environment,
+)
 
 router = APIRouter(prefix="/ballots", tags=["ballots"])
 
@@ -42,7 +46,7 @@ class AddressResolutionRequest(BaseModel):
 )
 def resolve_preview(
     request: AddressResolutionRequest,
-    pipeline: ResolutionPipeline = Depends(pipeline_from_environment),
+    pipeline: ResolutionPipeline | SyntheticDemoResolutionPipeline = Depends(pipeline_from_environment),
 ) -> BallotResolutionResponse:
     """Resolve an address in request memory and discard it before returning."""
     return pipeline.resolve(request.address)

@@ -81,6 +81,7 @@ class PlausibleBallot(PublicModel):
 
 class ResolutionBase(PublicModel):
     address_persisted: Literal[False] = False
+    demonstration: bool = False
     reason_codes: list[ResolutionReasonCode] = Field(default_factory=list)
 
 

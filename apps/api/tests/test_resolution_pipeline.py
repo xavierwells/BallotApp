@@ -154,3 +154,19 @@ def test_invalid_election_configuration_fails_closed(monkeypatch: pytest.MonkeyP
     result = pipeline_from_environment().resolve(SYNTHETIC_ADDRESS)
     assert result.status == "not_available"
     assert SYNTHETIC_ADDRESS not in repr(result)
+
+
+def test_synthetic_demo_is_explicit_and_development_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BALLOT_RESOLUTION_DEMO_ENABLED", "true")
+    monkeypatch.setenv("APP_ENV", "development")
+    demo = pipeline_from_environment().resolve(SYNTHETIC_ADDRESS)
+
+    assert demo.status == "resolved"
+    assert demo.demonstration is True
+    assert "DEMO" in demo.ballot.label  # type: ignore[attr-defined]
+    assert SYNTHETIC_ADDRESS not in repr(demo)
+
+    monkeypatch.setenv("APP_ENV", "production")
+    production = pipeline_from_environment().resolve(SYNTHETIC_ADDRESS)
+    assert production.status == "not_available"
+    assert production.demonstration is False

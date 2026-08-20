@@ -72,6 +72,11 @@ fail-closed. `GEOCODER_PROVIDER` must be approved and enabled, while
 `BALLOT_RESOLUTION_ELECTION_DATE` must identify the reviewed election. Missing
 or invalid context never causes the API to guess which election applies.
 
+For interface review only, a synthetic resolved response can be enabled with
+`BALLOT_RESOLUTION_DEMO_ENABLED=true` while `APP_ENV=development`. It is
+ignored in production and is conspicuously labeled in both the API and web UI.
+The fixture contains no real address, boundary, candidate, or ballot data.
+
 ## Data refresh and audit
 
 Boundary records are versioned, never overwritten. Each import captures authority, source URL, retrieval time, effective date, geometry checksum, and reviewer. Refresh on official redistricting/precinct notices and, during an active election, follow the election verification cadence in the launch plan.
