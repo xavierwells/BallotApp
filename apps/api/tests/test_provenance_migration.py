@@ -39,7 +39,8 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "('organizations', 'publications', 'documents', 'source_claims', "
                     "'verification_events', 'elections', 'ballot_versions', 'ballot_items', "
                     "'offices', 'races', 'candidates', 'propositions', "
-                    "'election_authorities', 'authority_source_registry')"
+                    "'election_authorities', 'authority_source_registry', "
+                    "'verification_cadence_policies', 'source_verification_checks')"
                 )
             )
         }
@@ -60,7 +61,9 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "WHERE NOT tgisinternal AND tgname IN "
                     "('documents_immutable', 'verification_events_immutable', "
                     "'source_claims_published_immutable', "
-                    "'source_claims_require_publication_event')"
+                    "'source_claims_require_publication_event', "
+                    "'verification_cadence_policies_scope_valid', "
+                    "'source_verification_checks_immutable')"
                 )
             )
         }
@@ -75,9 +78,9 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
             )
         }
 
-    assert len(tables) == 14
+    assert len(tables) == 16
     assert {"draft", "verified", "published", "retracted", "superseded"} <= claim_statuses
-    assert len(trigger_names) == 4
+    assert len(trigger_names) == 6
     assert document_columns == {"artifact_retention", "public_access_level", "content_length_bytes"}
 
     # A second invocation proves the command is safe for an already-current database.

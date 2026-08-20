@@ -59,6 +59,20 @@ The retained artifact is private to the deployment and is never exposed by a
   storage key in `documents`; it does not fetch a source merely because it was
   registered.
 
+## Verification cadence and stale-source queue
+
+The built-in cadence is the approved starting policy: monthly outside an
+active election, weekly during the final 90 days, and daily from official
+ballot availability through election day. It is not a hard-coded tenant rule.
+
+`verification_cadence_policies` accepts one policy at each scope, resolved in
+this order: election authority, publication, organization, then the built-in
+policy. This supports a single self-hosted tenant with no configuration as
+well as hosted publication and authority overrides. `source_verification_checks`
+keeps immutable check history, while `authority_source_registry.next_check_at`
+drives the future queue/alert job. No external retrieval is enabled by this
+schema; a check must be explicitly performed and recorded.
+
 ## Copperas Cove pilot registry
 
 The initial, editable manifest lives at

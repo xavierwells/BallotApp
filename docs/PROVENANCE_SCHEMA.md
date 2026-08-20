@@ -22,6 +22,8 @@ erDiagram
     ELECTION_AUTHORITIES ||--o{ AUTHORITY_SOURCE_REGISTRY : owns
     ELECTION_AUTHORITIES ||--o{ DOCUMENTS : publishes
     AUTHORITY_SOURCE_REGISTRY ||--o{ DOCUMENTS : catalogs
+    ELECTION_AUTHORITIES ||--o{ VERIFICATION_CADENCE_POLICIES : overrides
+    AUTHORITY_SOURCE_REGISTRY ||--o{ SOURCE_VERIFICATION_CHECKS : checked_by
     PUBLICATIONS ||--o{ ELECTIONS : publishes
     PUBLICATIONS ||--o{ OFFICES : defines
     PUBLICATIONS ||--o{ SOURCE_CLAIMS : scopes
@@ -58,6 +60,8 @@ verification_events
 | `documents` | Original authoritative/public documents and retrieval metadata | source URL, publisher, retrieved at, document date, checksum |
 | `election_authorities` | Bodies that administer or authoritatively publish election records | publication, stable slug, type, official website, lifecycle status |
 | `authority_source_registry` | External source endpoints and their approval state | authority, direct URL, terms/license, retention/redistribution review, reviewer/date |
+| `verification_cadence_policies` | Adjustable source-review timing at organization, publication, or authority scope | scope, stage intervals, updater, timestamps |
+| `source_verification_checks` | Immutable record of a source re-check and its next due time | source, outcome, checker, checked/next-check times |
 | `source_claims` | A single publishable factual assertion or attributed statement | claim text, claim type, source/document/page, status, confidence |
 | `verification_events` | Independent verification and correction history | verifier role, action, timestamp, before/after values |
 | `elections` | Election authority and event | authority, election date, jurisdiction |
