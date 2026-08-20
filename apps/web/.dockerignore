@@ -1,0 +1,10 @@
+# Docker installs dependencies from package-lock.json inside the builder.
+# Never copy host artifacts over that clean, integrity-checked installation.
+node_modules
+.next
+
+# Build context must not contain local credentials or repository metadata.
+.env
+.env.*
+.git
+npm-debug.log*
