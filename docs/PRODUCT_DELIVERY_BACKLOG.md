@@ -75,14 +75,14 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [x] Add PostgreSQL enums/check constraints for claim type, editorial status, source type, verification action, and ballot publication status.
 - [x] Add immutable revision/audit rules: published records are superseded, never silently overwritten.
 - [x] Add tenant/publication indexes and foreign-key constraints.
-- [ ] Add migration upgrade, fresh-database, rollback/forward-only, and integrity tests. (Implemented; awaiting its first CI run.)
+- [x] Add migration upgrade, fresh-database, rollback/forward-only, and integrity tests. (Verified in CI on 2026-08-20.)
 - [x] Document the schema and generate an ER diagram from the migration.
 
 ### Exit criteria
 
 - [x] A new database reaches the current schema with one migration command. (Verified with Compose on 2026-08-20.)
-- [ ] A claim cannot be published without source evidence. (Enforced and covered by the new integration test; awaiting CI confirmation.)
-- [ ] A published record change creates an auditable revision/verification event. (Enforced and covered by the new integration test; awaiting CI confirmation.)
+- [x] A claim cannot be published without source evidence. (Verified by the PostgreSQL integration test in CI on 2026-08-20.)
+- [x] A published record change creates an auditable revision/verification event. (Verified by the PostgreSQL integration test in CI on 2026-08-20.)
 - [x] The schema supports one organization now and multiple publications later without a breaking migration.
 
 ---
@@ -105,6 +105,10 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [ ] Add manual document upload/retrieval metadata flow before automation.
 - [ ] Add document page references and source-citation UI primitives.
 - [ ] Add verification cadence and stale-source alerts for active elections.
+
+### Decision checkpoint
+
+- [ ] Define the minimum evidence required to create a provisional candidate record. Confirm that “provisional” means source-backed but not independently verified, never unsourced.
 
 ### Exit criteria
 
@@ -135,6 +139,11 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [ ] Create synthetic address and boundary-edge test fixtures; never use real voter data.
 - [ ] Add daily verification of current ballot versions during the active election period.
 
+### Decision checkpoints
+
+- [ ] Hold a boundary-source go/no-go review before importing non-authoritative, incomplete, or conflicting geometry data.
+- [ ] Decide whether unresolved results may emit a privacy-preserving coarse-area signal. If so, specify granularity, aggregation threshold, retention, access controls, and a prohibition on raw address or coordinate retention.
+
 ### Exit criteria
 
 - Resolution never falls back to ZIP code.
@@ -163,6 +172,11 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [ ] Add two-person ballot verification workflow and publication gate.
 - [ ] Add candidate correction requests and public correction-log workflow.
 - [ ] Add manual import tools for ballot PDF text/OCR drafts; require human verification before publication.
+
+### Decision checkpoints
+
+- [ ] Decide and document how two-person verification is enforced. Before publication features ship, introduce authenticated editorial identities and require two distinct reviewers, neither of whom authored the claim; decide whether this is enforced by PostgreSQL, the workflow service, or both.
+- [ ] Decide how polymorphic claim/event subjects are validated before editorial forms can write them. Confirm whether a database trigger, a constrained application service with integrity tests, or a hybrid is required to ensure each `subject_id`/`target_id` exists for its declared type.
 
 ### Exit criteria
 
@@ -193,6 +207,12 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [ ] Add accessible responsive design, keyboard navigation, plain-language review, and Spanish-content plan.
 - [ ] Add correction/report form that does not collect a voter address.
 
+### Decision checkpoints
+
+- [ ] Define privacy-safe measurement methods and event definitions for Ballot Completion Rate, Information Completeness, Source Coverage, and Candidate Participation. Do not introduce address retention, cross-site tracking, or person-level voter analytics.
+- [ ] Decide the Spanish-content default, minimum launch coverage, translation review process, and how missing translations are presented.
+- [ ] Confirm that commercial/partner API access remains limited to contract design and licensed published data until the post-election expansion epic.
+
 ### Exit criteria
 
 - A voter can complete the core address-to-ballot journey on mobile and desktop.
@@ -219,6 +239,10 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [ ] Add uptime, error-rate, resolution-confidence, and stale-source monitoring.
 - [ ] Run a pre-launch content, security, accessibility, performance, and disaster-recovery review.
 - [ ] Switch to election mode: multiple daily source checks and expedited correction workflow.
+
+### Decision checkpoint
+
+- [ ] Approve the product-success metric dashboard, privacy review, aggregation thresholds, and launch baseline before public beta.
 
 ### Exit criteria
 
@@ -256,4 +280,4 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ## Priority now
 
-The active work is **Epic 1**. Its first task is to approve the persistence/migration dependencies, then implement and test `001_provenance_core`. No candidate profile, proposition, or ballot-writing feature should begin before that migration passes its exit criteria.
+Epic 1 is complete. The active work is **Epic 2**. Its first task is to establish the official source registry and provider/data-license approval workflow before importing election records or source documents.
