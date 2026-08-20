@@ -135,9 +135,9 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [x] Add PostGIS and migration support for versioned geometries. Migration `009_boundary_foundations` and PostGIS 3.6 were verified in Compose on 2026-08-20.
 - [ ] Import official county, precinct, municipal, school-district, legislative, and special-district boundaries.
 - [ ] Implement self-owned point-in-polygon jurisdiction resolution.
-- [ ] Define and implement confidence, ambiguity, source-conflict, and not-found result models.
-- [ ] Implement non-personalized ballot browsing by ZIP code, city, and county; label results as selectable area matches rather than exact voter matches.
-- [ ] For unresolved addresses, return and display the evidence-backed plausible ballot set with geographic explanations, source citations, and no preselected winner.
+- [ ] Define and implement confidence, ambiguity, source-conflict, and not-found result models. Public API schemas, reason codes, validation, and Swagger routes are implemented; resolver behavior awaits geocoder/boundary integration.
+- [ ] Implement non-personalized ballot browsing by ZIP code, city, and county; label results as selectable area matches rather than exact voter matches. API contract is implemented; data lookup and web presentation remain.
+- [ ] For unresolved addresses, return and display the evidence-backed plausible ballot set with geographic explanations, source citations, and no preselected winner. Validated API response model is implemented; resolver and web presentation remain.
 - [ ] Match resolved jurisdiction memberships to verified official ballot styles/versions.
 - [ ] Create synthetic address and boundary-edge test fixtures; never use real voter data.
 - [ ] Add daily verification of current ballot versions during the active election period.

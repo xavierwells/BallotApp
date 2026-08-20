@@ -9,7 +9,7 @@ from app.routers.health import router as health_router
 app = FastAPI(
     title="What's on My Ballot API",
     summary="Versioned civic-information APIs with evidence and privacy safeguards.",
-    version="0.1.0",
+    version="0.2.0",
     openapi_url="/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",

@@ -11,7 +11,7 @@ An open, nonpartisan civic-information platform. This repository begins with a p
 - `infra/kubernetes` — Rancher-compatible standard Kubernetes manifests.
 - `docs` — privacy, API, testing, license, and deployment standards.
 
-No civic-data or geocoding provider is connected yet. The address endpoint is a deliberately non-persisting preview so that privacy is a verified rule before a provider is selected.
+No civic-data or geocoding provider is connected yet. Address resolution and coarse-area browsing publish their contracts but return `not_available`, so privacy and ambiguity behavior can be verified before a provider or real boundary source is selected.
 
 ## Start the stack
 
@@ -25,6 +25,7 @@ Run API and OpenAPI contract tests with `make api-test` (or the equivalent Docke
 Read [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for bare-metal and Rancher/Kubernetes deployment.
 The staged product plan and current implementation priority are in [`docs/PRODUCT_DELIVERY_BACKLOG.md`](docs/PRODUCT_DELIVERY_BACKLOG.md).
 Plain-language definitions for civic, election, editorial, data, and software terminology are in [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
+Address-resolution and ZIP/city/county browsing responses are defined in [`docs/BALLOT_DISCOVERY_API.md`](docs/BALLOT_DISCOVERY_API.md).
 Quality gates and operational standards are in [`docs/CI_QUALITY_GATES.md`](docs/CI_QUALITY_GATES.md), [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md), and [`docs/ACCESSIBILITY.md`](docs/ACCESSIBILITY.md).
 
 ## Non-negotiable rules
