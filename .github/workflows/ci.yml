@@ -1,0 +1,52 @@
+name: Quality gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  policy-and-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify direct dependency approvals
+        run: python3 scripts/check_direct_dependency_approvals.py
+      - name: Test the API contract and browser CORS preflight
+        run: |
+          python3 -m pip install --disable-pip-version-check -r apps/api/requirements-dev.txt
+          cd apps/api && python3 -m pytest -q
+      - name: Build the web application from the lockfile
+        run: |
+          cd apps/web && npm ci && npm run build
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Audit Python dependencies
+        run: |
+          python3 -m pip install --disable-pip-version-check pip-audit==2.10.0
+          python3 -m pip_audit -r apps/api/requirements.txt
+      - name: Audit web dependencies from the lockfile
+        run: cd apps/web && npm ci --ignore-scripts && npm audit --omit=dev --audit-level=high
+      - name: Scan source for secrets, configuration, vulnerabilities, and licenses
+        run: |
+          docker run --rm -v "$PWD:/src:ro" aquasec/trivy:0.69.3 \
+            fs --scanners vuln,secret,misconfig,license --severity HIGH,CRITICAL --exit-code 1 /src
+      - name: Build production images
+        run: |
+          docker build --tag ballot-web:ci apps/web
+          docker build --tag ballot-api:ci apps/api
+      - name: Scan production images and produce SPDX SBOMs
+        run: |
+          mkdir -p artifacts
+          for image in ballot-web:ci ballot-api:ci; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 \
+              image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 "$image"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/artifacts:/artifacts" aquasec/trivy:0.69.3 \
+              image --format spdx-json --output "/artifacts/${image%%:*}.spdx.json" "$image"
+          done

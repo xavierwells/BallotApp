@@ -1,0 +1,15 @@
+{
+  "approvedDirectDependencies": [
+    "@types/node",
+    "@types/react",
+    "@types/react-dom",
+    "fastapi",
+    "httpx",
+    "next",
+    "pytest",
+    "react",
+    "react-dom",
+    "typescript",
+    "uvicorn"
+  ]
+}

@@ -1,0 +1,17 @@
+services:
+  web:
+    environment:
+      NODE_ENV: production
+    read_only: true
+    tmpfs:
+      - /tmp
+  api:
+    environment:
+      APP_ENV: production
+    read_only: true
+    tmpfs:
+      - /tmp
+  postgres:
+    ports: []
+  valkey:
+    ports: []
