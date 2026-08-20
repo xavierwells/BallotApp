@@ -7,6 +7,14 @@ This document is the delivery plan for the Copperas Cove 2026 pilot and the path
 1. A voter can enter an address and see only the ballot items that reliably apply to them.
 2. Every published factual assertion is traceable to evidence and editorial verification.
 3. The service does not retain voter addresses or other unnecessary PII.
+
+The core voter-guide experience overlaps established products, especially
+VOTE411. Differentiation is a hypothesis to validate, not a claim of novelty;
+see [`PRODUCT_POSITIONING_AND_VALIDATION.md`](PRODUCT_POSITIONING_AND_VALIDATION.md).
+
+Outreach, permissions, manual audits, editorial staffing, and other work that
+must be performed by a person are centralized in
+[`HUMAN_ACTION_REGISTER.md`](HUMAN_ACTION_REGISTER.md).
 4. A city, nonprofit, publisher, or government partner can eventually operate the same product as hosted multi-tenant software or a self-hosted installation.
 
 ## Delivery sequence
@@ -140,6 +148,7 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [ ] Implement non-personalized ballot browsing by ZIP code, city, and county; label results as selectable area matches rather than exact voter matches. The API service, validation, synthetic fixtures, responsive web presentation, sourced ranking contract, migration `012`, fail-closed promotion command, and publication-scoped database reader are implemented. The pinned 76522 calculation was imported on 2026-08-20 as draft evidence: Coryell 38,975/41,123 (94.78%) and Lampasas 2,148/41,123 (5.22%). Operator promotion/enablement, city/county indexes, and real verified-ballot lookup remain.
 - [x] For unresolved addresses, return and display the evidence-backed plausible ballot set with geographic explanations, source citations, and no preselected winner. The comparison UI labels every choice as possible, explains the unresolved reason, and provides no selection control.
 - [x] Match resolved jurisdiction memberships to verified official ballot styles/versions. Ballot versions now carry an immutable, source-backed combination of geographic requirements; all requirements must match, and zero/multiple results never choose a winner.
+- [x] Add a controlled official-ballot manifest and draft importer. It requires an already-registered authoritative document, page citations, stable keys, verified geographic requirements, idempotent drift checks, and can never publish. Migration `013` requires cited items and two distinct verifier events before publication.
 - [x] Create synthetic address and boundary-edge test fixtures; never use real voter data. Geocoder, boundary importer, exact-edge, overlap-conflict, and no-match cases use invented examples only.
 - [x] Add opt-in browser location resolution with a registered-home warning, request-only coordinates, accuracy-aware boundary ambiguity, and sanitized API validation.
 - [ ] Add search-as-you-type address suggestions only after a provider or self-hosted dataset passes privacy, license, cost, retention, and operational review. Native browser saved-address autofill remains enabled in the interim.
@@ -148,7 +157,8 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 ### Decision checkpoints
 
 - [x] Hold a boundary-source go/no-go review before importing non-authoritative, incomplete, or conflicting geometry data. Inventory and holds are recorded in `BOUNDARY_SOURCE_REVIEW.md`; private reference imports are approved, while authoritative resolver use still requires authority confirmation.
-- [ ] Decide whether unresolved results may emit a privacy-preserving coarse-area signal. If so, specify granularity, aggregation threshold, retention, access controls, and a prohibition on raw address or coordinate retention.
+- [ ] Audit current VOTE411 and other incumbent coverage against the official Copperas Cove ballot when published and again 14–21 days before Election Day. Record only aggregate coverage observations—never the tested address—and decide whether the evidence supports a local-coverage, infrastructure, complementary-layer, or stop/pivot position.
+- [ ] Decide whether unresolved results may emit a privacy-preserving coarse-area signal. The decision must cover `source_conflict`, `ambiguous`, `needs_review`, and `not_found`; specify granularity, aggregation threshold, retention, access controls, and a prohibition on raw address or coordinate retention. It must support detecting area-wide evidence problems without reconstructing individual requests.
 
 ### Exit criteria
 
@@ -176,6 +186,7 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [ ] Build candidate, office, race, proposition, and questionnaire editorial forms on top of the provenance schema.
 - [ ] Add candidate outreach templates, deadlines, reminders, and immutable communication log.
 - [ ] Add research-task queues driven by missing evidence, verification state, election urgency, and overdue-source alerts; make the editorial dashboard the default alert destination.
+- [ ] Add an explicit boundary source-conflict queue and resolution workflow. Editors must be able to compare conflicting versions, record the disposition, and publish a superseding version without deleting the conflicting evidence.
 - [ ] Add editor-controlled, opt-in email preferences for alerts they are authorized to view; keep any ticketing adapter disabled until a provider and disclosure review are approved.
 - [ ] Add two-person ballot verification workflow and publication gate.
 - [ ] Add candidate correction requests and public correction-log workflow.
@@ -185,6 +196,7 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 - [ ] Decide and document how two-person verification is enforced. Before publication features ship, introduce authenticated editorial identities and require two distinct reviewers, neither of whom authored the claim; decide whether this is enforced by PostgreSQL, the workflow service, or both.
 - [ ] Decide how polymorphic claim/event subjects are validated before editorial forms can write them. Confirm whether a database trigger, a constrained application service with integrity tests, or a hybrid is required to ensure each `subject_id`/`target_id` exists for its declared type.
+- [ ] Resolve whether `candidates.candidate_document_id` remains mandatory or becomes nullable for provisional candidate-directory entries. Define the minimum evidence and visible incomplete state before candidate-creation forms ship.
 
 ### Exit criteria
 
@@ -288,4 +300,4 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ## Priority now
 
-Epics 0–2 are complete for the direct-link/manual-check initial-launch policy. **Epic 3 is active**: its PostGIS/versioned-boundary foundation, optional ephemeral geocoder, controlled draft importer, and self-owned jurisdiction resolver are implemented; real boundary imports and ballot-style membership remain open.
+Epics 0–2 are complete for the direct-link/manual-check initial-launch policy. **Epic 3 is active**: its PostGIS/versioned-boundary foundation, optional ephemeral geocoder, controlled boundary and official-ballot draft importers, self-owned jurisdiction resolver, and reviewed ZIP browse evidence are implemented; authoritative November boundaries and real official ballot manifests remain open.

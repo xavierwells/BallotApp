@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from app.cli.bootstrap_authorities import read_manifest
 
 
@@ -14,8 +12,7 @@ def test_copperas_cove_manifest_has_the_required_pilot_authorities() -> None:
         ),
         None,
     )
-    if manifest_path is None:
-        pytest.skip("pilot manifest is mounted at runtime and is validated from the repository checkout in CI")
+    assert manifest_path is not None, "required pilot authority manifest is missing; mount repository data/ at /app/data"
 
     manifest = read_manifest(manifest_path)
 

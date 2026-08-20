@@ -85,6 +85,8 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'boundary_versions_verified_immutable', "
                     "'ballot_area_requirements_final_immutable', "
                     "'ballot_versions_require_geography', "
+                    "'ballot_items_final_immutable', "
+                    "'ballot_versions_require_complete_content', "
                     "'browse_areas_final_immutable', 'browse_estimates_final_immutable', "
                     "'browse_evidence_final_immutable')"
                 )
@@ -129,7 +131,7 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
 
     assert len(tables) == 24
     assert {"draft", "verified", "published", "retracted", "superseded"} <= claim_statuses
-    assert len(trigger_names) == 16
+    assert len(trigger_names) == 18
     assert postgis_version
     assert boundary_geometry == {"type": "MULTIPOLYGON", "srid": 4326}
     assert browse_geometry == {"type": "MULTIPOLYGON", "srid": 4326}
@@ -279,6 +281,7 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
 
     election_id = str(uuid4())
     ballot_version_id = str(uuid4())
+    proposition_id = str(uuid4())
     with engine.begin() as connection:
         connection.execute(
             text(
@@ -327,6 +330,36 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
         )
         connection.execute(
             text(
+                "INSERT INTO propositions "
+                "(id, publication_id, election_id, official_document_id, external_identifier, "
+                "ballot_title, official_text, source_page) VALUES "
+                "(:id, :publication_id, :election_id, :document_id, 'synthetic-proposition', "
+                "'Synthetic Proposition', 'Synthetic official text.', '1')"
+            ),
+            {"id": proposition_id, "publication_id": publication_id,
+             "election_id": election_id, "document_id": document_id},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO ballot_items "
+                "(id, publication_id, ballot_version_id, proposition_id, sequence, source_page) "
+                "VALUES (gen_random_uuid(), :publication_id, :ballot_id, :proposition_id, 1, '1')"
+            ),
+            {"publication_id": publication_id, "ballot_id": ballot_version_id,
+             "proposition_id": proposition_id},
+        )
+        for reviewer in ("synthetic-verifier-one", "synthetic-verifier-two"):
+            connection.execute(
+                text(
+                    "INSERT INTO verification_events "
+                    "(id, publication_id, action, target_type, target_id, actor_reference, actor_role) "
+                    "VALUES (gen_random_uuid(), :publication_id, 'verified', 'ballot_version', "
+                    ":ballot_id, :reviewer, 'verifier')"
+                ),
+                {"publication_id": publication_id, "ballot_id": ballot_version_id, "reviewer": reviewer},
+            )
+        connection.execute(
+            text(
                 "UPDATE ballot_versions SET status = 'published', published_at = CURRENT_TIMESTAMP "
                 "WHERE id = :id"
             ),
@@ -341,6 +374,32 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
     )
     assert ballot_match.status is BallotMatchStatus.MATCHED
     assert ballot_match.ballot_version_ids == (UUID(ballot_version_id),)
+
+    one_review_ballot_id = str(uuid4())
+    with engine.begin() as connection:
+        connection.execute(text(
+            "INSERT INTO ballot_versions (id,publication_id,election_id,official_document_id,external_identifier,status,retrieved_at) "
+            "VALUES (:id,:p,:e,:d,'synthetic-one-review','draft',CURRENT_TIMESTAMP)"
+        ), {"id": one_review_ballot_id, "p": publication_id, "e": election_id, "d": document_id})
+        connection.execute(text(
+            "INSERT INTO ballot_geographic_requirements (ballot_version_id,publication_id,geographic_area_id,authority_id,source_document_id,verified_by_reference,verified_at) "
+            "VALUES (:b,:p,:a,:authority,:d,'synthetic-test',CURRENT_TIMESTAMP)"
+        ), {"b": one_review_ballot_id, "p": publication_id, "a": geographic_area_id,
+            "authority": authority_id, "d": document_id})
+        connection.execute(text(
+            "INSERT INTO ballot_items (id,publication_id,ballot_version_id,proposition_id,sequence,source_page) "
+            "VALUES (gen_random_uuid(),:p,:b,:q,1,'1')"
+        ), {"p": publication_id, "b": one_review_ballot_id, "q": proposition_id})
+        connection.execute(text(
+            "INSERT INTO verification_events (id,publication_id,action,target_type,target_id,actor_reference,actor_role) "
+            "VALUES (gen_random_uuid(),:p,'verified','ballot_version',:b,'only-one-verifier','verifier')"
+        ), {"p": publication_id, "b": one_review_ballot_id})
+
+    with pytest.raises(DatabaseError, match="two distinct reviewers"):
+        with engine.begin() as connection:
+            connection.execute(text(
+                "UPDATE ballot_versions SET status='published',published_at=CURRENT_TIMESTAMP WHERE id=:id"
+            ), {"id": one_review_ballot_id})
 
     unmapped_ballot_id = str(uuid4())
     with engine.begin() as connection:
@@ -376,6 +435,13 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "DELETE FROM ballot_geographic_requirements "
                     "WHERE ballot_version_id = :ballot_id"
                 ),
+                {"ballot_id": ballot_version_id},
+            )
+
+    with pytest.raises(DatabaseError, match="published ballot items are immutable"):
+        with engine.begin() as connection:
+            connection.execute(
+                text("DELETE FROM ballot_items WHERE ballot_version_id = :ballot_id"),
                 {"ballot_id": ballot_version_id},
             )
 

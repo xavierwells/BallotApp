@@ -17,7 +17,7 @@ down:
 
 api-test:
 	docker build --target test -t ballot-api-test ./apps/api
-	docker run --rm ballot-api-test
+	docker run --rm --mount type=bind,source="$(CURDIR)/data",target=/app/data,readonly ballot-api-test
 
 db-upgrade:
 	docker compose run --rm migrate

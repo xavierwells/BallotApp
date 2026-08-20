@@ -1,12 +1,10 @@
 from pathlib import Path
 
-import pytest
-
 from app.cli.import_browse_coverage import read_manifest
 
 
-def pilot_manifest() -> Path | None:
-    return next(
+def pilot_manifest() -> Path:
+    path = next(
         (
             parent / "data" / "browse" / "copperas-cove-pilot.json"
             for parent in Path(__file__).resolve().parents
@@ -14,12 +12,12 @@ def pilot_manifest() -> Path | None:
         ),
         None,
     )
+    assert path is not None, "required browse manifest is missing; mount repository data/ at /app/data"
+    return path
 
 
 def test_pilot_manifest_pins_the_reviewed_population_calculation() -> None:
     path = pilot_manifest()
-    if path is None:
-        pytest.skip("browse manifest is validated from the repository checkout in CI")
     manifest = read_manifest(path)
 
     assert manifest["zcta"]["query"] == "76522"

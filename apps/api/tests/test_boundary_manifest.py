@@ -6,8 +6,8 @@ import pytest
 from app.cli.import_boundary_manifest import arguments_for, read_manifest
 
 
-def repository_manifest() -> Path | None:
-    return next(
+def repository_manifest() -> Path:
+    path = next(
         (
             parent / "data" / "boundaries" / "copperas-cove-2026-primary-reference.json"
             for parent in Path(__file__).resolve().parents
@@ -15,12 +15,12 @@ def repository_manifest() -> Path | None:
         ),
         None,
     )
+    assert path is not None, "required boundary manifest is missing; mount repository data/ at /app/data"
+    return path
 
 
 def test_pilot_boundary_manifest_is_pinned_and_reference_only() -> None:
     path = repository_manifest()
-    if path is None:
-        pytest.skip("boundary manifest is validated from the repository checkout in CI")
     manifest = read_manifest(path)
 
     assert manifest["resolutionEligibility"] == "reference_only"
@@ -34,8 +34,6 @@ def test_pilot_boundary_manifest_is_pinned_and_reference_only() -> None:
 
 def test_manifest_rejects_non_reference_geometry(tmp_path: Path) -> None:
     path = repository_manifest()
-    if path is None:
-        pytest.skip("boundary manifest is validated from the repository checkout in CI")
     content = json.loads(path.read_text(encoding="utf-8"))
     content["resolutionEligibility"] = "verified"
     invalid = tmp_path / "invalid.json"
@@ -47,8 +45,6 @@ def test_manifest_rejects_non_reference_geometry(tmp_path: Path) -> None:
 
 def test_manifest_arguments_never_promote_reference_geometry() -> None:
     path = repository_manifest()
-    if path is None:
-        pytest.skip("boundary manifest is validated from the repository checkout in CI")
     manifest = read_manifest(path)
     arguments = arguments_for(manifest, manifest["imports"][0], apply=True)
 

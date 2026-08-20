@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "organizationSlug": "whats-on-my-ballot",
+  "publicationSlug": "copperas-cove",
+  "sourceDocument": {
+    "checksumSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "sourceUrl": "https://example.test/synthetic-official-ballot.pdf"
+  },
+  "election": {
+    "authorityName": "Synthetic Election Authority",
+    "jurisdictionName": "Synthetic Civic Area",
+    "electionDate": "2026-11-03",
+    "electionType": "general"
+  },
+  "races": [
+    {
+      "key": "synthetic-council-place-one",
+      "office": {
+        "name": "Synthetic Council Place 1",
+        "governmentLevel": "municipal",
+        "jurisdictionName": "Synthetic Civic Area",
+        "termDescription": "Synthetic four-year term"
+      },
+      "districtLabel": "Place 1",
+      "ballotTitle": "Synthetic Council Place 1",
+      "seatsAvailable": 1,
+      "candidates": [
+        {"canonicalName": "Sample Candidate Alpha", "ballotLabel": "Sample Candidate Alpha"},
+        {"canonicalName": "Sample Candidate Beta", "ballotLabel": "Sample Candidate Beta"}
+      ]
+    }
+  ],
+  "propositions": [
+    {
+      "key": "synthetic-proposition-a",
+      "ballotTitle": "Synthetic Proposition A",
+      "officialText": "This is invented ballot text used only to test the import contract.",
+      "sourcePage": "2"
+    }
+  ],
+  "ballotVersions": [
+    {
+      "externalIdentifier": "synthetic-style-001",
+      "items": [
+        {"sequence": 1, "type": "race", "key": "synthetic-council-place-one", "sourcePage": "1"},
+        {"sequence": 2, "type": "proposition", "key": "synthetic-proposition-a", "sourcePage": "2"}
+      ],
+      "geographicRequirements": [
+        {
+          "authoritySlug": "synthetic-authority",
+          "areaSlug": "synthetic-area",
+          "verifiedByReference": "synthetic-reviewer"
+        }
+      ]
+    }
+  ]
+}
