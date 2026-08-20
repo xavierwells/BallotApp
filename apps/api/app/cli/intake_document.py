@@ -47,7 +47,7 @@ def intake_document(
         registry_entry = connection.execute(
             text(
                 "SELECT publication.id AS publication_id, election_authorities.id AS authority_id, "
-                "authority_source_registry.id AS registry_id, authority_source_registry.approval_status "
+                "authority_source_registry.id AS registry_id, authority_source_registry.permitted_use "
                 "FROM publications "
                 "JOIN election_authorities ON election_authorities.publication_id = publications.id "
                 "JOIN authority_source_registry ON authority_source_registry.authority_id = election_authorities.id "
@@ -65,8 +65,10 @@ def intake_document(
         ).mappings().one_or_none()
         if registry_entry is None:
             raise ValueError("authority/source registry entry was not found")
-        if public_access_level == "public_copy" and registry_entry["approval_status"] != "approved":
-            raise ValueError("public_copy requires an approved source-registry entry")
+        if registry_entry["permitted_use"] not in {"private_retention", "public_copy"}:
+            raise ValueError("source use does not permit private document retention")
+        if public_access_level == "public_copy" and registry_entry["permitted_use"] != "public_copy":
+            raise ValueError("public_copy requires a source review that explicitly permits public copies")
 
         existing = connection.execute(
             text(

@@ -40,11 +40,12 @@ def record_source_check(
     next_check_at: datetime,
     notes: str | None,
 ) -> str:
-    """Insert an immutable manual check for one approved, tenant-scoped source."""
+    """Insert an immutable manual check for one scoped source."""
     with engine.begin() as connection:
         source = connection.execute(
             text(
-                "SELECT authority_source_registry.id, authority_source_registry.approval_status "
+                "SELECT authority_source_registry.id, authority_source_registry.approval_status, "
+                "authority_source_registry.permitted_use "
                 "FROM organizations "
                 "JOIN publications ON publications.organization_id = organizations.id "
                 "JOIN election_authorities ON election_authorities.publication_id = publications.id "
@@ -63,8 +64,10 @@ def record_source_check(
         ).mappings().one_or_none()
         if source is None:
             raise ValueError("authority source was not found in the specified organization and publication")
-        if source["approval_status"] != "approved":
-            raise ValueError("a source must be approved before it can enter the verification schedule")
+        if source["permitted_use"] not in {"direct_link_manual_check", "private_retention", "public_copy"}:
+            raise ValueError("source use does not permit manual verification checks")
+        if source["approval_status"] not in {"pending_review", "approved"}:
+            raise ValueError("a rejected or retired source cannot enter the verification schedule")
         if next_check_at <= checked_at:
             raise ValueError("next check time must be after the completed check time")
 

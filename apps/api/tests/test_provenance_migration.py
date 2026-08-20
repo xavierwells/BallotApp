@@ -86,7 +86,8 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                 text(
                     "SELECT column_name FROM information_schema.columns "
                     "WHERE table_schema = 'public' AND table_name = 'authority_source_registry' "
-                    "AND column_name IN ('monitoring_class', 'automated_monitoring_allowed')"
+                    "AND column_name IN ('monitoring_class', 'automated_monitoring_allowed', 'permitted_use', "
+                    "'permitted_use_reviewer_reference', 'permitted_use_reviewed_at', 'permitted_use_notes')"
                 )
             )
         }
@@ -95,7 +96,14 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
     assert {"draft", "verified", "published", "retracted", "superseded"} <= claim_statuses
     assert len(trigger_names) == 9
     assert document_columns == {"artifact_retention", "public_access_level", "content_length_bytes"}
-    assert source_registry_columns == {"monitoring_class", "automated_monitoring_allowed"}
+    assert source_registry_columns == {
+        "monitoring_class",
+        "automated_monitoring_allowed",
+        "permitted_use",
+        "permitted_use_reviewer_reference",
+        "permitted_use_reviewed_at",
+        "permitted_use_notes",
+    }
 
     # A second invocation proves the command is safe for an already-current database.
     command.upgrade(alembic_config(), "head")

@@ -41,6 +41,13 @@ An official government domain is evidence of ownership, not a blanket
 license to redistribute documents or use an API. Pending entries are safe to
 catalog but not yet eligible for automated retrieval.
 
+For the initial launch, the Copperas Cove pilot sources use the deliberately
+narrow `direct_link_manual_check` scope. It allows a direct attribution link
+and a human's manual check of that link; it does **not** authorize private
+artifact retention, public copies, scraping, or scheduled automated requests.
+This scope is recorded separately from `approval_status`, so the registry does
+not misrepresent a product policy as a source-content license.
+
 Until Epic 4 provides authenticated editorial roles, the review decision is an
 operator-only local command. Approval requires every review field that the
 database constraint requires; the command never contacts the external URL.
@@ -53,6 +60,7 @@ python -m app.cli.review_source \
   --authority-slug city-of-copperas-cove \
   --source-slug election-information \
   --approval-status approved \
+  --permitted-use private_retention \
   --reviewer-reference editor-123 \
   --terms-url https://authority.example/terms \
   --source-license "public-record terms reviewed" \
@@ -64,8 +72,8 @@ python -m app.cli.review_source \
 ```
 
 `--automated-monitoring-allowed` is opt-in and accepted only with an
-`approved` decision. A retired source cannot be reactivated; register a
-replacement source for fresh review instead.
+`approved` decision and a non-zero permitted-use scope. A retired source
+cannot be reactivated; register a replacement source for fresh review instead.
 
 ## Retention and visibility policy
 

@@ -30,6 +30,10 @@ Implemented:
 - An operator-only review command records the terms, license, retention,
   attribution, and redistribution decision required before a source can be
   approved or monitored.
+- Research findings for the six pilot sources are recorded in
+  `PILOT_SOURCE_REVIEW.md`. All entries remain pending for content rights but
+  use `direct_link_manual_check` for the initial launch; no source grants
+  content retention, redistribution, or automated-monitoring rights.
 
 ## Next operator steps
 
@@ -42,7 +46,10 @@ docker compose logs migrate
 docker compose exec postgres psql -U ballot -d ballot -c "SELECT version_num FROM alembic_version;"
 ```
 
-Current verified deployed version: `007_source_check_operations`.
+Current verified deployed version: `007_source_check_operations`. The current
+working tree adds `008_source_use_scope`; after it is committed or pulled,
+Compose should advance the database to that revision and the bootstrap command
+will apply the direct-link/manual-check policy to the six pilot entries.
 
 Then load the pending-review pilot registry without contacting any external
 source:
@@ -81,24 +88,27 @@ terms, retention, redistribution, and monitoring rights have been reviewed.
 3. Which special districts are in Copperas Cove pilot scope? Add each only
    after an official election order, ballot, or boundary source establishes
    applicability.
+4. The initial-launch decision is direct links plus manual checks only. Before
+   later enabling private provenance retention or automation, decide whether
+   the team should request written permission from each pilot authority.
 
 ### Required before editorial candidate records
 
-4. What minimum source evidence creates a provisional candidate record?
+5. What minimum source evidence creates a provisional candidate record?
    The current proposed rule is source-backed but not independently verified;
    never unsourced.
 
 ### Required before Epic 4 dashboard work
 
-5. What editor-facing details should an unresolved investigation alert show,
+6. What editor-facing details should an unresolved investigation alert show,
    beyond source, latest check result, election context, and source URL?
-6. How long should resolved source-alert history remain visible in the
+7. How long should resolved source-alert history remain visible in the
    dashboard, and may alerts be reopened after resolution?
-7. Which email frequency controls should an editor have: immediate, daily
+8. Which email frequency controls should an editor have: immediate, daily
    digest, weekly digest, or another model?
 
 ### Explicitly deferred
 
-8. Which ticketing provider, if any, should be supported first? No ticketing
+9. Which ticketing provider, if any, should be supported first? No ticketing
    integration should be implemented or enabled before this is chosen and its
    data-disclosure rules are reviewed.

@@ -100,11 +100,11 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 ### Tasks
 
 - [ ] Load Copperas Cove, Coryell/Bell/Lampasas County, CCISD, Texas, and applicable special-district authority records. The local pilot manifest and idempotent bootstrap command are ready; special districts still require official evidence.
-- [x] Create the source registry and provider/data-license approval workflow.
+- [x] Create the source registry and provider/data-license approval workflow. The six pilot sources have dated research records in `PILOT_SOURCE_REVIEW.md`; initial launch permits direct links and manual checks only, while content rights remain pending.
 - [x] Add object storage abstraction and checksum-based document records.
 - [x] Add manual document upload/retrieval metadata flow before automation.
 - [x] Add document page references and source-citation UI primitives.
-- [ ] Complete verification cadence and stale-source alerts for active elections. The policy, monitoring classes, check history, review/check operator commands, and hybrid alert lifecycle were successfully migrated through `007_source_check_operations` on 2026-08-20; the authenticated dashboard and notification delivery are Epic 4 work, and an approved monitoring adapter is still needed.
+- [ ] Complete verification cadence and stale-source alerts for active elections. The policy, monitoring classes, check history, review/check operator commands, and hybrid alert lifecycle were successfully migrated through `007_source_check_operations` on 2026-08-20; `008_source_use_scope` implements the direct-link/manual-check launch policy. The authenticated dashboard and notification delivery are Epic 4 work, and an approved monitoring adapter is still needed.
 
 ### Decision checkpoint
 

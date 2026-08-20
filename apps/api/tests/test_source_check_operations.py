@@ -62,7 +62,9 @@ class FakeEngine:
 def test_record_source_check_scopes_the_lookup_and_inserts_a_manual_check() -> None:
     connection = FakeConnection(
         [
-            FakeResult(mapping={"id": "source-id", "approval_status": "approved"}),
+            FakeResult(
+                mapping={"id": "source-id", "approval_status": "pending_review", "permitted_use": "direct_link_manual_check"}
+            ),
             FakeResult(scalar="check-id"),
         ]
     )
@@ -88,11 +90,13 @@ def test_record_source_check_scopes_the_lookup_and_inserts_a_manual_check() -> N
     assert connection.calls[1][1]["next_check_at"] == next_check_at
 
 
-def test_record_source_check_rejects_unapproved_sources_and_invalid_schedule() -> None:
+def test_record_source_check_rejects_sources_without_a_permitted_use() -> None:
     now = datetime(2026, 8, 20, 12, tzinfo=timezone.utc)
-    unapproved_connection = FakeConnection([FakeResult(mapping={"id": "source-id", "approval_status": "pending_review"})])
+    unapproved_connection = FakeConnection(
+        [FakeResult(mapping={"id": "source-id", "approval_status": "pending_review", "permitted_use": "none"})]
+    )
 
-    with pytest.raises(ValueError, match="must be approved"):
+    with pytest.raises(ValueError, match="does not permit"):
         record_source_check(
             engine=FakeEngine(unapproved_connection),  # type: ignore[arg-type]
             organization_slug="organization",
@@ -113,7 +117,8 @@ def test_queue_overdue_alerts_is_timestamp_only_and_returns_created_count() -> N
 
     assert queue_overdue_alerts(engine=FakeEngine(connection), now=now) == 2  # type: ignore[arg-type]
     statement, parameters = connection.calls[0]
-    assert "approval_status = 'approved'" in statement
+    assert "approval_status IN ('pending_review', 'approved')" in statement
+    assert "permitted_use IN ('direct_link_manual_check', 'private_retention', 'public_copy')" in statement
     assert "monitoring_class <> 'disabled'" in statement
     assert "ON CONFLICT DO NOTHING" in statement
     assert parameters == {"now": now}
@@ -129,6 +134,7 @@ def test_review_source_requires_complete_terms_before_approval() -> None:
             authority_slug="authority",
             source_slug="source",
             approval_status="approved",
+            permitted_use="private_retention",
             reviewer_reference="editor",
             reviewed_at=now,
             review_notes=None,
@@ -154,6 +160,7 @@ def test_review_source_rejects_automation_for_an_unapproved_decision() -> None:
             authority_slug="authority",
             source_slug="source",
             approval_status="rejected",
+            permitted_use="none",
             reviewer_reference="editor",
             reviewed_at=now,
             review_notes=None,

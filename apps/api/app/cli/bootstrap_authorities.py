@@ -56,6 +56,7 @@ ALLOWED_SOURCE_CATEGORIES = {
     "other",
 }
 ALLOWED_MONITORING_CLASSES = {"active_ballot", "active_election", "reference", "disabled"}
+ALLOWED_PERMITTED_USES = {"none", "direct_link_manual_check", "private_retention", "public_copy"}
 
 
 def read_manifest(path: Path) -> dict[str, Any]:
@@ -88,6 +89,10 @@ def read_manifest(path: Path) -> dict[str, Any]:
                 raise ValueError(f"unsupported source category: {source.get('sourceCategory')!r}")
             if source.get("monitoringClass", "reference") not in ALLOWED_MONITORING_CLASSES:
                 raise ValueError(f"unsupported monitoring class: {source.get('monitoringClass')!r}")
+            if source.get("permittedUse", "none") not in ALLOWED_PERMITTED_USES:
+                raise ValueError(f"unsupported permitted use: {source.get('permittedUse')!r}")
+            if source.get("permittedUse", "none") not in {"none", "direct_link_manual_check"}:
+                raise ValueError("bootstrap may grant only direct_link_manual_check; content rights require source review")
             if not str(source.get("sourceUrl", "")).startswith("https://"):
                 raise ValueError("source URLs must use HTTPS")
             if source.get("approvalStatus", "pending_review") != "pending_review":
@@ -148,7 +153,7 @@ def bootstrap(manifest: dict[str, Any]) -> tuple[int, int]:
             for source in authority["sources"]:
                 existing = connection.execute(
                     text(
-                        "SELECT source_url, approval_status FROM authority_source_registry "
+                        "SELECT id, source_url, approval_status, permitted_use FROM authority_source_registry "
                         "WHERE authority_id = :authority_id AND slug = :slug"
                     ),
                     {"authority_id": authority_id, "slug": source["slug"]},
@@ -159,13 +164,32 @@ def bootstrap(manifest: dict[str, Any]) -> tuple[int, int]:
                             f"source {authority['slug']}/{source['slug']} has changed; "
                             "retire it and register a replacement for fresh review"
                         )
+                    requested_use = source.get("permittedUse", "none")
+                    if existing["permitted_use"] == "none" and requested_use == "direct_link_manual_check":
+                        connection.execute(
+                            text(
+                                "UPDATE authority_source_registry SET permitted_use = 'direct_link_manual_check', "
+                                "permitted_use_reviewer_reference = 'initial-launch-policy', "
+                                "permitted_use_reviewed_at = CURRENT_TIMESTAMP, "
+                                "permitted_use_notes = 'Initial launch: direct links and manual checks only; no content retention or automation.' "
+                                "WHERE id = :source_id"
+                            ),
+                            {"source_id": existing["id"]},
+                        )
+                    elif existing["permitted_use"] != requested_use:
+                        raise RuntimeError(
+                            f"source {authority['slug']}/{source['slug']} use scope has changed; "
+                            "record a source review rather than changing scope through bootstrap"
+                        )
                     continue
                 connection.execute(
                     text(
                         "INSERT INTO authority_source_registry "
-                        "(id, authority_id, slug, name, source_url, source_category, monitoring_class, approval_status) "
+                        "(id, authority_id, slug, name, source_url, source_category, monitoring_class, approval_status, "
+                        "permitted_use, permitted_use_reviewer_reference, permitted_use_reviewed_at, permitted_use_notes) "
                         "VALUES (gen_random_uuid(), :authority_id, :slug, :name, :source_url, :source_category, "
-                        ":monitoring_class, 'pending_review')"
+                        ":monitoring_class, 'pending_review', :permitted_use, :permitted_use_reviewer_reference, "
+                        "CASE WHEN :permitted_use = 'none' THEN NULL ELSE CURRENT_TIMESTAMP END, :permitted_use_notes)"
                     ),
                     {
                         "authority_id": authority_id,
@@ -174,6 +198,15 @@ def bootstrap(manifest: dict[str, Any]) -> tuple[int, int]:
                         "source_url": source["sourceUrl"],
                         "source_category": source["sourceCategory"],
                         "monitoring_class": source.get("monitoringClass", "reference"),
+                        "permitted_use": source.get("permittedUse", "none"),
+                        "permitted_use_reviewer_reference": (
+                            "initial-launch-policy" if source.get("permittedUse", "none") != "none" else None
+                        ),
+                        "permitted_use_notes": (
+                            "Initial launch: direct links and manual checks only; no content retention or automation."
+                            if source.get("permittedUse", "none") != "none"
+                            else None
+                        ),
                     },
                 )
                 source_count += 1

@@ -12,7 +12,8 @@ from app.cli.record_source_check import parse_utc_datetime
 from app.database import get_engine
 
 
-APPROVAL_STATUSES = ("approved", "rejected", "retired")
+APPROVAL_STATUSES = ("pending_review", "approved", "rejected", "retired")
+PERMITTED_USES = ("none", "direct_link_manual_check", "private_retention", "public_copy")
 APPROVAL_FIELDS = (
     "terms_url",
     "source_license",
@@ -32,6 +33,7 @@ def review_source(
     authority_slug: str,
     source_slug: str,
     approval_status: str,
+    permitted_use: str,
     reviewer_reference: str,
     reviewed_at: datetime,
     review_notes: str | None,
@@ -63,6 +65,12 @@ def review_source(
             raise ValueError("terms URL must use HTTPS")
     elif automated_monitoring_allowed:
         raise ValueError("automated monitoring can be enabled only for an approved source")
+    if automated_monitoring_allowed and permitted_use == "none":
+        raise ValueError("automated monitoring requires a permitted source use")
+    if permitted_use in {"private_retention", "public_copy"} and approval_status != "approved":
+        raise ValueError("private retention and public copies require an approved source")
+    if approval_status in {"rejected", "retired"} and permitted_use != "none":
+        raise ValueError("rejected or retired sources must have no permitted use")
 
     with engine.begin() as connection:
         source = connection.execute(
@@ -102,12 +110,20 @@ def review_source(
                 "approval_status = :approval_status, "
                 "reviewer_reference = :reviewer_reference, reviewed_at = :reviewed_at, "
                 "review_notes = :review_notes, next_review_at = :next_review_at, "
-                "automated_monitoring_allowed = :automated_monitoring_allowed "
+                "automated_monitoring_allowed = :automated_monitoring_allowed, "
+                "permitted_use = :permitted_use, "
+                "permitted_use_reviewer_reference = :permitted_use_reviewer_reference, "
+                "permitted_use_reviewed_at = :permitted_use_reviewed_at, "
+                "permitted_use_notes = :permitted_use_notes "
                 "WHERE id = :source_id"
             ),
             {
                 **decision,
                 "approval_status": approval_status,
+                "permitted_use": permitted_use,
+                "permitted_use_reviewer_reference": reviewer_reference if permitted_use != "none" else None,
+                "permitted_use_reviewed_at": reviewed_at if permitted_use != "none" else None,
+                "permitted_use_notes": review_notes if permitted_use != "none" else None,
                 "reviewer_reference": reviewer_reference,
                 "reviewed_at": reviewed_at,
                 "review_notes": review_notes,
@@ -126,6 +142,12 @@ def main() -> None:
     parser.add_argument("--authority-slug", required=True)
     parser.add_argument("--source-slug", required=True)
     parser.add_argument("--approval-status", required=True, choices=APPROVAL_STATUSES)
+    parser.add_argument(
+        "--permitted-use",
+        required=True,
+        choices=PERMITTED_USES,
+        help="direct_link_manual_check permits links and human checks only; it does not permit retention.",
+    )
     parser.add_argument("--reviewer-reference", required=True, help="Operator identifier; do not use an address or voter data.")
     parser.add_argument("--reviewed-at", type=parse_utc_datetime, default=datetime.now(timezone.utc))
     parser.add_argument("--review-notes", help="Do not include PII, voter data, or private storage paths.")
@@ -147,6 +169,7 @@ def main() -> None:
         authority_slug=arguments.authority_slug,
         source_slug=arguments.source_slug,
         approval_status=arguments.approval_status,
+        permitted_use=arguments.permitted_use,
         reviewer_reference=arguments.reviewer_reference,
         reviewed_at=arguments.reviewed_at,
         review_notes=arguments.review_notes,

@@ -38,3 +38,8 @@ def test_copperas_cove_manifest_has_the_required_pilot_authorities() -> None:
         for authority in manifest["authorities"]
         for source in authority["sources"]
     )
+    assert all(
+        source["permittedUse"] == "direct_link_manual_check"
+        for authority in manifest["authorities"]
+        for source in authority["sources"]
+    )
