@@ -12,8 +12,6 @@ Only the components listed below are approved for the initial scaffold. This is 
 | Uvicorn | ASGI server | BSD-3-Clause | upstream project license |
 | Pytest | test runner | MIT | upstream project license |
 | HTTPX | API test-client dependency | BSD-3-Clause | upstream project license |
-| msgpack | Transitive dependency pinned to a patched release | Apache-2.0 | [PyPI project metadata](https://pypi.org/project/msgpack/) |
-| Setuptools | Python packaging runtime component pinned to a patched release | MIT | [PyPI project metadata](https://pypi.org/project/setuptools/) |
 | TypeScript and DefinitelyTyped packages | compile-time web types | Apache-2.0 / MIT | upstream project licenses |
 | pip-audit | Python dependency vulnerability scanner | Apache-2.0 | [upstream project](https://github.com/pypa/pip-audit) |
 | Trivy | vulnerability, secret, misconfiguration, license, image, and SBOM scanner | Apache-2.0 | [upstream project](https://github.com/aquasecurity/trivy) |

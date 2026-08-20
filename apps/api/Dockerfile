@@ -28,7 +28,21 @@ COPY tests ./tests
 CMD ["pytest", "-q"]
 
 FROM base AS runtime
-RUN addgroup -S -g 10001 appgroup \
+# The API never installs packages at runtime.  Remove pip, setuptools, and
+# ensurepip (including pip's vendored msgpack) after the application packages
+# have been installed.  This also removes unused package-management attack
+# surface from the production image.
+RUN rm -rf /usr/local/bin/pip \
+        /usr/local/bin/pip3 \
+        /usr/local/bin/pip3.13 \
+        /usr/local/lib/python3.13/ensurepip \
+        /usr/local/lib/python3.13/site-packages/pip \
+        /usr/local/lib/python3.13/site-packages/pip-*.dist-info \
+        /usr/local/lib/python3.13/site-packages/pkg_resources \
+        /usr/local/lib/python3.13/site-packages/setuptools \
+        /usr/local/lib/python3.13/site-packages/setuptools-*.dist-info \
+        /usr/local/lib/python3.13/site-packages/distutils-precedence.pth \
+    && addgroup -S -g 10001 appgroup \
     && adduser -S -u 10001 -G appgroup appuser
 COPY app ./app
 USER appuser

@@ -5,12 +5,10 @@
     "@types/react-dom",
     "fastapi",
     "httpx",
-    "msgpack",
     "next",
     "pytest",
     "react",
     "react-dom",
-    "setuptools",
     "typescript",
     "uvicorn"
   ]
