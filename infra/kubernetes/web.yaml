@@ -12,6 +12,12 @@ spec:
       labels:
         app.kubernetes.io/name: web
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: web
           image: registry.example.com/whats-on-my-ballot-web
