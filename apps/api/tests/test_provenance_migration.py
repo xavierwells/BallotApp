@@ -40,7 +40,8 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'verification_events', 'elections', 'ballot_versions', 'ballot_items', "
                     "'offices', 'races', 'candidates', 'propositions', "
                     "'election_authorities', 'authority_source_registry', "
-                    "'verification_cadence_policies', 'source_verification_checks', 'source_alerts')"
+                    "'verification_cadence_policies', 'source_verification_checks', 'source_alerts', "
+                    "'geographic_areas', 'boundary_datasets', 'boundary_versions')"
                 )
             )
         }
@@ -66,7 +67,9 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'source_verification_checks_immutable', "
                     "'source_alerts_resolve_after_manual_unchanged_check', "
                     "'source_registry_schedule_after_check', "
-                    "'source_alerts_open_after_source_check')"
+                    "'source_alerts_open_after_source_check', "
+                    "'boundary_datasets_final_immutable', "
+                    "'boundary_versions_verified_immutable')"
                 )
             )
         }
@@ -91,10 +94,20 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                 )
             )
         }
+        postgis_version = connection.execute(text("SELECT PostGIS_Version()")).scalar_one()
+        boundary_geometry = connection.execute(
+            text(
+                "SELECT type, srid FROM geometry_columns "
+                "WHERE f_table_schema = 'public' AND f_table_name = 'boundary_versions' "
+                "AND f_geometry_column = 'boundary'"
+            )
+        ).mappings().one()
 
-    assert len(tables) == 17
+    assert len(tables) == 20
     assert {"draft", "verified", "published", "retracted", "superseded"} <= claim_statuses
-    assert len(trigger_names) == 9
+    assert len(trigger_names) == 11
+    assert postgis_version
+    assert boundary_geometry == {"type": "MULTIPOLYGON", "srid": 4326}
     assert document_columns == {"artifact_retention", "public_access_level", "content_length_bytes"}
     assert source_registry_columns == {
         "monitoring_class",
@@ -151,7 +164,7 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                 "INSERT INTO authority_source_registry "
                 "(id, authority_id, slug, name, source_url, source_category) "
                 "VALUES (:id, :authority_id, 'elections', 'Elections', "
-                "'https://example.test/elections', 'election_information')"
+                "'https://example.test/elections', 'boundaries')"
             ),
             {"id": registry_entry_id, "authority_id": authority_id},
         )
@@ -164,6 +177,68 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
             ),
             {"id": document_id, "publication_id": publication_id, "checksum": "a" * 64},
         )
+
+    geographic_area_id = str(uuid4())
+    boundary_dataset_id = str(uuid4())
+    boundary_version_id = str(uuid4())
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO geographic_areas "
+                "(id, authority_id, slug, name, area_type, status) "
+                "VALUES (:id, :authority_id, 'synthetic-precinct', 'Synthetic Precinct', "
+                "'voting_precinct', 'active')"
+            ),
+            {"id": geographic_area_id, "authority_id": authority_id},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO boundary_datasets "
+                "(id, authority_id, authority_source_registry_id, source_url, checked_at, status, "
+                "reviewer_reference, reviewed_at) "
+                "VALUES (:id, :authority_id, :registry_id, 'https://example.test/boundaries', "
+                "CURRENT_TIMESTAMP, 'imported', 'synthetic-test', CURRENT_TIMESTAMP)"
+            ),
+            {
+                "id": boundary_dataset_id,
+                "authority_id": authority_id,
+                "registry_id": registry_entry_id,
+            },
+        )
+        connection.execute(
+            text(
+                "INSERT INTO boundary_versions "
+                "(id, authority_id, geographic_area_id, boundary_dataset_id, effective_from, "
+                "geometry_checksum_sha256, status, verified_by_reference, verified_at, boundary) "
+                "VALUES (:id, :authority_id, :area_id, :dataset_id, DATE '2026-01-01', :checksum, "
+                "'verified', 'synthetic-test', CURRENT_TIMESTAMP, "
+                "ST_GeomFromText('MULTIPOLYGON(((-97.91 31.10, -97.89 31.10, "
+                "-97.89 31.12, -97.91 31.12, -97.91 31.10)))', 4326))"
+            ),
+            {
+                "id": boundary_version_id,
+                "authority_id": authority_id,
+                "area_id": geographic_area_id,
+                "dataset_id": boundary_dataset_id,
+                "checksum": "c" * 64,
+            },
+        )
+        contains_synthetic_point = connection.execute(
+            text(
+                "SELECT ST_Covers(boundary, ST_SetSRID(ST_Point(-97.90, 31.11), 4326)) "
+                "FROM boundary_versions WHERE id = :id"
+            ),
+            {"id": boundary_version_id},
+        ).scalar_one()
+
+    assert contains_synthetic_point is True
+
+    with pytest.raises(DatabaseError, match="verified boundary versions are immutable"):
+        with engine.begin() as connection:
+            connection.execute(
+                text("UPDATE boundary_versions SET effective_to = DATE '2026-12-31' WHERE id = :id"),
+                {"id": boundary_version_id},
+            )
 
     with pytest.raises(DatabaseError, match="ck_authority_source_registry_approved_reviewed"):
         with engine.begin() as connection:

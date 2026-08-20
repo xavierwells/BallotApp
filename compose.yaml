@@ -52,7 +52,7 @@ services:
     restart: "no"
 
   postgres:
-    image: postgres:18-alpine
+    image: postgis/postgis:18-3.6-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-ballot}
       POSTGRES_USER: ${POSTGRES_USER:-ballot}

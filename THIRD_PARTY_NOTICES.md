@@ -11,6 +11,8 @@ Only the components listed below are approved for the initial scaffold. This is 
 | Next.js | web framework | MIT | [upstream package metadata](https://github.com/vercel/next.js/blob/canary/packages/next/package.json) |
 | React | UI runtime | MIT | upstream project license |
 | PostgreSQL | relational database | PostgreSQL License | [official license](https://www.postgresql.org/about/licence/) |
+| PostGIS | Spatial types, indexes, and geographic queries in PostgreSQL | GPL-2.0-or-later | [official license FAQ](https://postgis.net/documentation/faq/gpl-license/); the application communicates with PostGIS as a database service and does not incorporate or modify its code |
+| Docker PostGIS image | PostgreSQL 18 + PostGIS 3.6 development/runtime image | MIT (image packaging); bundled components retain their own licenses | [upstream image repository](https://github.com/postgis/docker-postgis) |
 | Valkey | optional cache and future queue broker | BSD-3-Clause | [upstream project](https://github.com/valkey-io/valkey) |
 | Uvicorn | ASGI server | BSD-3-Clause | upstream project license |
 | Pytest | test runner | MIT | upstream project license |

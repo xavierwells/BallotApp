@@ -24,6 +24,7 @@ Run API and OpenAPI contract tests with `make api-test` (or the equivalent Docke
 
 Read [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for bare-metal and Rancher/Kubernetes deployment.
 The staged product plan and current implementation priority are in [`docs/PRODUCT_DELIVERY_BACKLOG.md`](docs/PRODUCT_DELIVERY_BACKLOG.md).
+Plain-language definitions for civic, election, editorial, data, and software terminology are in [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 Quality gates and operational standards are in [`docs/CI_QUALITY_GATES.md`](docs/CI_QUALITY_GATES.md), [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md), and [`docs/ACCESSIBILITY.md`](docs/ACCESSIBILITY.md).
 
 ## Non-negotiable rules

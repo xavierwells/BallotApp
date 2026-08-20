@@ -20,6 +20,10 @@ erDiagram
     PUBLICATIONS ||--o{ DOCUMENTS : retains
     PUBLICATIONS ||--o{ ELECTION_AUTHORITIES : scopes
     ELECTION_AUTHORITIES ||--o{ AUTHORITY_SOURCE_REGISTRY : owns
+    ELECTION_AUTHORITIES ||--o{ GEOGRAPHIC_AREAS : defines
+    AUTHORITY_SOURCE_REGISTRY ||--o{ BOUNDARY_DATASETS : supplies
+    GEOGRAPHIC_AREAS ||--o{ BOUNDARY_VERSIONS : has
+    BOUNDARY_DATASETS ||--o{ BOUNDARY_VERSIONS : supports
     ELECTION_AUTHORITIES ||--o{ DOCUMENTS : publishes
     AUTHORITY_SOURCE_REGISTRY ||--o{ DOCUMENTS : catalogs
     ELECTION_AUTHORITIES ||--o{ VERIFICATION_CADENCE_POLICIES : overrides
@@ -61,6 +65,9 @@ verification_events
 | `documents` | Original authoritative/public documents and retrieval metadata | source URL, publisher, retrieved at, document date, checksum |
 | `election_authorities` | Bodies that administer or authoritatively publish election records | publication, stable slug, type, official website, lifecycle status |
 | `authority_source_registry` | External source endpoints and their approval state | authority, direct URL, terms/license, monitoring class/method approval, reviewer/date |
+| `geographic_areas` | Stable civic-area identities independent of changing map shapes | authority, type, external identifier, lifecycle status |
+| `boundary_datasets` | Reviewed registrations of future official geometry imports | source registry, direct URL, checked/effective dates, status, reviewer/date |
+| `boundary_versions` | Time-bounded PostGIS geometry for one civic area | dataset, effective dates, geometry checksum, verification, predecessor |
 | `verification_cadence_policies` | Adjustable source-review timing at organization, publication, or authority scope | scope, stage intervals, updater, timestamps |
 | `source_verification_checks` | Immutable record of a source re-check and its next due time | source, outcome, checker, checked/next-check times; current schedule is updated only by a non-older check |
 | `source_alerts` | Open or resolved stale-source and investigation work | source, alert type, resolution, check linkage, timestamps |
@@ -83,6 +90,7 @@ verification_events
 - Claims include editorial status (`draft`, `needs_review`, `verified`, `published`, `retracted`, `superseded`), confidence, and a visible “last verified” time.
 - Candidate responses are source documents/claims, not automatically verified facts.
 - The schema stores no voter addresses, geocodes, or other voter-entered PII.
+- Boundary storage contains public civic geometry only. Submitted addresses and resolved points have no persistence table.
 - Every accepted source artifact is retained privately. A document defaults to
   `metadata_only` public access; a visible copy requires an approved source
   review that explicitly permits it.

@@ -124,17 +124,20 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 ### Stories
 
 - As a voter, I receive the ballot style that applies to my location, not a generic city or ZIP-code ballot.
+- As a voter who does not want to enter an address, I can browse and choose among ballots available by ZIP code, city, or county without the product claiming an exact match.
 - As a researcher, I can import, version, and reconcile official precinct and district boundaries.
-- As a voter near an uncertain boundary, I am told the result is unresolved rather than being shown a guessed ballot.
+- As a voter whose address cannot be resolved to one ballot, I can compare the plausible ballots with an explanation of which geography and source supports each one.
 - As an operator, I can see why a resolution used a particular boundary and ballot version without retaining the voter address.
 
 ### Tasks
 
 - [ ] Evaluate and approve a geocoder adapter; verify address retention, cost, rate limits, and terms.
-- [ ] Add PostGIS and migration support for versioned geometries.
+- [x] Add PostGIS and migration support for versioned geometries. Migration `009_boundary_foundations` and PostGIS 3.6 were verified in Compose on 2026-08-20.
 - [ ] Import official county, precinct, municipal, school-district, legislative, and special-district boundaries.
 - [ ] Implement self-owned point-in-polygon jurisdiction resolution.
 - [ ] Define and implement confidence, ambiguity, source-conflict, and not-found result models.
+- [ ] Implement non-personalized ballot browsing by ZIP code, city, and county; label results as selectable area matches rather than exact voter matches.
+- [ ] For unresolved addresses, return and display the evidence-backed plausible ballot set with geographic explanations, source citations, and no preselected winner.
 - [ ] Match resolved jurisdiction memberships to verified official ballot styles/versions.
 - [ ] Create synthetic address and boundary-edge test fixtures; never use real voter data.
 - [ ] Add daily verification of current ballot versions during the active election period.
@@ -146,8 +149,9 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ### Exit criteria
 
-- Resolution never falls back to ZIP code.
+- Address resolution never silently falls back to ZIP code; ZIP is available only through a clearly labeled user-selected browse mode.
 - A result identifies its ballot version and source evidence, or returns a documented non-confident status.
+- An unresolved result may display plausible ballots for comparison but never labels one as the voter's ballot.
 - No raw address is stored in databases, queues, analytics, application logs, or support workflows.
 
 ---
@@ -281,4 +285,4 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ## Priority now
 
-Epics 0–2 are complete for the direct-link/manual-check initial-launch policy. The next active work is **Epic 3**: geographic districts and privacy-preserving ballot resolution.
+Epics 0–2 are complete for the direct-link/manual-check initial-launch policy. **Epic 3 is active**: its PostGIS/versioned-boundary foundation is verified; geocoder and real boundary-source approvals remain open.
