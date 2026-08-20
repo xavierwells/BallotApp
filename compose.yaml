@@ -24,8 +24,8 @@ services:
     ports:
       - "${API_PORT:-8080}:8080"
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/v1/health/live')"]
       interval: 10s
@@ -33,6 +33,17 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+
+  migrate:
+    build:
+      context: ./apps/api
+    command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ballot}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-ballot}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   postgres:
     image: postgres:18-alpine

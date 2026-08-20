@@ -3,12 +3,16 @@
     "@types/node",
     "@types/react",
     "@types/react-dom",
+    "alembic",
     "fastapi",
     "httpx",
     "next",
+    "pip-tools",
     "pytest",
+    "pg8000",
     "react",
     "react-dom",
+    "sqlalchemy",
     "typescript",
     "uvicorn"
   ]

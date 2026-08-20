@@ -9,6 +9,7 @@ docker compose up --build
 ```
 
 The stack exposes only the web (`3000`) and API (`8080`) ports. PostgreSQL and Valkey remain private to the Docker network.
+Compose applies the forward-only schema migration before starting the API. To apply it explicitly, run `docker compose run --rm migrate` (or `make db-upgrade`).
 
 ## Single server / bare metal
 

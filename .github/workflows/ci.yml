@@ -11,13 +11,32 @@ permissions:
 jobs:
   policy-and-tests:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: ballot_test
+          POSTGRES_USER: ballot_test
+          POSTGRES_PASSWORD: ballot_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ballot_test -d ballot_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://ballot_test:ballot_test@localhost:5432/ballot_test
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
       - name: Verify direct dependency approvals
         run: python3 scripts/check_direct_dependency_approvals.py
       - name: Test the API contract and browser CORS preflight
         run: |
-          python3 -m pip install --disable-pip-version-check -r apps/api/requirements-dev.txt
+          python3 -m pip install --disable-pip-version-check --require-hashes -r apps/api/requirements-dev.lock
           cd apps/api && python3 -m pytest -q
       - name: Build the web application from the lockfile
         run: |
@@ -30,7 +49,7 @@ jobs:
       - name: Audit Python dependencies
         run: |
           python3 -m pip install --disable-pip-version-check pip-audit==2.10.0
-          python3 -m pip_audit -r apps/api/requirements.txt
+          python3 -m pip_audit -r apps/api/requirements.lock
       - name: Audit web dependencies from the lockfile
         run: cd apps/web && npm ci --ignore-scripts --omit=optional && npm audit --omit=dev --omit=optional --audit-level=high
       - name: Scan source for secrets, configuration, vulnerabilities, and licenses

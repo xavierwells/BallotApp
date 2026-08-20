@@ -5,17 +5,22 @@ Only the components listed below are approved for the initial scaffold. This is 
 | Component | Purpose | License | Approval basis |
 | --- | --- | --- | --- |
 | FastAPI | API framework and OpenAPI/Swagger generation | MIT | [upstream project metadata](https://github.com/fastapi/fastapi/blob/master/pyproject.toml) |
+| Alembic | PostgreSQL schema migrations | MIT | [PyPI project metadata](https://pypi.org/project/alembic/) |
+| SQLAlchemy | database access and schema metadata | MIT | [PyPI project metadata](https://pypi.org/project/SQLAlchemy/) |
+| pg8000 | pure-Python PostgreSQL driver | BSD-3-Clause | [PyPI project metadata](https://pypi.org/project/pg8000/) |
 | Next.js | web framework | MIT | [upstream package metadata](https://github.com/vercel/next.js/blob/canary/packages/next/package.json) |
 | React | UI runtime | MIT | upstream project license |
 | PostgreSQL | relational database | PostgreSQL License | [official license](https://www.postgresql.org/about/licence/) |
 | Valkey | optional cache and future queue broker | BSD-3-Clause | [upstream project](https://github.com/valkey-io/valkey) |
 | Uvicorn | ASGI server | BSD-3-Clause | upstream project license |
 | Pytest | test runner | MIT | upstream project license |
+| pip-tools | hash-locked Python dependency generation | BSD-3-Clause | [PyPI project metadata](https://pypi.org/project/pip-tools/) |
 | HTTPX | API test-client dependency | BSD-3-Clause | upstream project license |
 | TypeScript and DefinitelyTyped packages | compile-time web types | Apache-2.0 / MIT | upstream project licenses |
 | pip-audit | Python dependency vulnerability scanner | Apache-2.0 | [upstream project](https://github.com/pypa/pip-audit) |
 | Trivy | vulnerability, secret, misconfiguration, license, image, and SBOM scanner | Apache-2.0 | [upstream project](https://github.com/aquasecurity/trivy) |
 | GitHub checkout action | CI source checkout | MIT | [upstream project](https://github.com/actions/checkout) |
+| GitHub setup-python action | CI's pinned Python runtime | MIT | [upstream project](https://github.com/actions/setup-python) |
 
 ## Explicitly excluded dependencies
 

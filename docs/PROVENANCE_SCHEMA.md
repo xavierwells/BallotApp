@@ -1,6 +1,37 @@
 # Provenance-first data model
 
-This is the required first migration boundary, before any candidate, proposition, or ballot data is persisted. The implementation should use PostgreSQL migrations (Alembic is the preferred migration tool, subject to normal dependency approval).
+This is the required first migration boundary, before any candidate, proposition, or ballot data is persisted. It is implemented by Alembic migration `001_provenance_core` and is deliberately forward-only: restoring a verified backup is the recovery route for a destructive rollback.
+
+## Apply and verify
+
+Compose runs the migration before the API starts. To run it explicitly:
+
+```sh
+docker compose run --rm migrate
+```
+
+The migration integration test applies the schema to a new PostgreSQL database, verifies the required tables, enums, and triggers, and proves a second upgrade is idempotent. It uses `TEST_DATABASE_URL` and therefore runs in CI against an isolated PostgreSQL service.
+
+## Schema map
+
+```mermaid
+erDiagram
+    ORGANIZATIONS ||--o{ PUBLICATIONS : owns
+    PUBLICATIONS ||--o{ DOCUMENTS : retains
+    PUBLICATIONS ||--o{ ELECTIONS : publishes
+    PUBLICATIONS ||--o{ OFFICES : defines
+    PUBLICATIONS ||--o{ SOURCE_CLAIMS : scopes
+    ELECTIONS ||--o{ RACES : contains
+    OFFICES ||--o{ RACES : contests
+    ELECTIONS ||--o{ PROPOSITIONS : contains
+    ELECTIONS ||--o{ BALLOT_VERSIONS : has
+    BALLOT_VERSIONS ||--o{ BALLOT_ITEMS : orders
+    RACES ||--o{ CANDIDATES : has
+    RACES ||--o| BALLOT_ITEMS : represents
+    PROPOSITIONS ||--o| BALLOT_ITEMS : represents
+    DOCUMENTS ||--o{ SOURCE_CLAIMS : supports
+    SOURCE_CLAIMS ||--o{ VERIFICATION_EVENTS : audited_by
+```
 
 ## Minimum tables
 
@@ -27,13 +58,18 @@ verification_events
 | `ballot_versions` | A time-bounded official ballot style | official source, retrieved at, publication/verification status |
 | `ballot_items` | Ordered entries on one ballot version | race/proposition type, sequence, source citation |
 | `candidates` | A person running in a specific race | canonical name, office/race reference, candidate-status source |
+| `organizations` / `publications` | Future organization and publication isolation without an early multi-tenant deployment | UUID owner, stable slug, creation time |
+| `offices` / `races` | Structured contests that appear on an election ballot | election and office references, ballot title, seats available |
+| `propositions` | Official text for non-race ballot entries | official document reference and page citation |
 
 ## Non-negotiable fields
 
+- A published claim has a required source document, a verification time, and a linked `verification_event`; a deferred PostgreSQL constraint rejects publication without that event.
 - No published candidate fact is an unlinked column value. It must be represented by at least one `source_claim`.
 - Claim types distinguish verified fact, candidate statement, editorial analysis, and community tip.
-- Documents and ballot versions are immutable after publication; corrections create a superseding revision and `verification_event`.
-- Claims include editorial status (`draft`, `needs_review`, `verified`, `published`, `retracted`), confidence, and a visible “last verified” time.
+- Documents and verification events are immutable immediately. Published claims and published ballot versions are immutable; corrections create a superseding revision and `verification_event`.
+- Claims include editorial status (`draft`, `needs_review`, `verified`, `published`, `retracted`, `superseded`), confidence, and a visible “last verified” time.
 - Candidate responses are source documents/claims, not automatically verified facts.
+- The schema stores no voter addresses, geocodes, or other voter-entered PII.
 
 The physical schema may evolve, but these relationships and audit properties may not be bypassed for speed.

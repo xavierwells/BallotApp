@@ -1,4 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
+
+from app.database import database_is_ready
 
 router = APIRouter(tags=["operational"])
 
@@ -11,5 +13,10 @@ def live() -> dict[str, str]:
 
 @router.get("/health/ready", summary="Readiness check", response_model=dict[str, str])
 def ready() -> dict[str, str]:
-    """A database-aware readiness check will replace this during persistence work."""
+    """Report whether PostgreSQL is reachable for API work."""
+    if not database_is_ready():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="database unavailable",
+        )
     return {"status": "ready"}

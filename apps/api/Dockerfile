@@ -5,9 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /build
-COPY requirements.txt requirements-dev.txt ./
-RUN apk add --no-cache build-base libffi-dev \
-    && python -m pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+COPY requirements.txt requirements-dev.txt requirements.lock requirements-dev.lock ./
+RUN apk add --no-cache build-base cargo libffi-dev rust \
+    && python -m pip wheel --no-cache-dir --require-hashes --wheel-dir /wheels -r requirements.lock
 
 FROM python:3.13-alpine AS base
 
@@ -16,13 +16,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
-COPY requirements.txt requirements-dev.txt ./
+COPY requirements.txt requirements-dev.txt requirements.lock requirements-dev.lock ./
 COPY --from=wheels /wheels /wheels
-RUN python -m pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt \
+RUN python -m pip install --no-cache-dir --require-hashes --no-index --find-links=/wheels -r requirements.lock \
     && rm -rf /wheels
 
 FROM base AS test
-RUN pip install --no-cache-dir -r requirements-dev.txt
+RUN pip install --no-cache-dir --require-hashes -r requirements-dev.lock
+COPY alembic.ini ./
+COPY migrations ./migrations
 COPY app ./app
 COPY tests ./tests
 CMD ["pytest", "-q"]
@@ -44,6 +46,8 @@ RUN rm -rf /usr/local/bin/pip \
         /usr/local/lib/python3.13/site-packages/distutils-precedence.pth \
     && addgroup -S -g 10001 appgroup \
     && adduser -S -u 10001 -G appgroup appuser
+COPY alembic.ini ./
+COPY migrations ./migrations
 COPY app ./app
 USER appuser
 

@@ -68,22 +68,22 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ### Tasks
 
-- [ ] Approve and record the licenses for the PostgreSQL driver, SQLAlchemy, Alembic, and test tooling.
-- [ ] Add the database driver, ORM/data-access layer, migration tool, and pinned lockfiles.
-- [ ] Add database configuration, health/readiness checks, and a migration command/container target.
-- [ ] Create migration `001_provenance_core` for organizations/publications, documents, source claims, verification events, elections, ballot versions, ballot items, races/offices, candidates, and propositions.
-- [ ] Add PostgreSQL enums/check constraints for claim type, editorial status, source type, verification action, and ballot publication status.
-- [ ] Add immutable revision/audit rules: published records are superseded, never silently overwritten.
-- [ ] Add tenant/publication indexes and foreign-key constraints.
-- [ ] Add migration upgrade, fresh-database, rollback/forward-only, and integrity tests.
-- [ ] Document the schema and generate an ER diagram from the migration.
+- [x] Approve and record the licenses for the PostgreSQL driver, SQLAlchemy, Alembic, and test tooling.
+- [x] Add the database driver, ORM/data-access layer, migration tool, and pinned lockfiles. (Hash-locked API and migration images rebuilt successfully on 2026-08-20.)
+- [x] Add database configuration, health/readiness checks, and a migration command/container target.
+- [x] Create migration `001_provenance_core` for organizations/publications, documents, source claims, verification events, elections, ballot versions, ballot items, races/offices, candidates, and propositions.
+- [x] Add PostgreSQL enums/check constraints for claim type, editorial status, source type, verification action, and ballot publication status.
+- [x] Add immutable revision/audit rules: published records are superseded, never silently overwritten.
+- [x] Add tenant/publication indexes and foreign-key constraints.
+- [ ] Add migration upgrade, fresh-database, rollback/forward-only, and integrity tests. (Implemented; awaiting its first CI run.)
+- [x] Document the schema and generate an ER diagram from the migration.
 
 ### Exit criteria
 
-- A new database reaches the current schema with one migration command.
-- A claim cannot be published without source evidence.
-- A published record change creates an auditable revision/verification event.
-- The schema supports one organization now and multiple publications later without a breaking migration.
+- [x] A new database reaches the current schema with one migration command. (Verified with Compose on 2026-08-20.)
+- [ ] A claim cannot be published without source evidence. (Enforced and covered by the new integration test; awaiting CI confirmation.)
+- [ ] A published record change creates an auditable revision/verification event. (Enforced and covered by the new integration test; awaiting CI confirmation.)
+- [x] The schema supports one organization now and multiple publications later without a breaking migration.
 
 ---
 
