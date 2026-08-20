@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "organizationSlug": "whats-on-my-ballot",
+  "publicationSlug": "copperas-cove",
+  "publisherSlug": "us-census-bureau",
+  "sourceReview": {
+    "termsUrl": "https://www.census.gov/data/developers/about/terms-of-service.html",
+    "sourceLicense": "U.S. Census Bureau public data; API terms reviewed",
+    "costModel": "free",
+    "rateLimit": "pinned operator import; no request-time calls",
+    "retentionRule": "retain pinned responses privately for provenance",
+    "attributionRequirement": "U.S. Census Bureau source plus required non-endorsement notice",
+    "redistributionRights": "metadata_only",
+    "permittedUse": "private_retention"
+  },
+  "zcta": {
+    "query": "76522",
+    "sourceSlug": "tigerweb-2020-zcta",
+    "endpoint": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer/2/query",
+    "parameters": {
+      "f": "json",
+      "where": "ZCTA5='76522'",
+      "outFields": "ZCTA5,GEOID,NAME,AREALAND,AREAWATER",
+      "returnGeometry": "true",
+      "outSR": "4326"
+    },
+    "responseSha256": "07559f43e7f81d016c6c0490c0de9f02f9901bd89dbfa8bb01477f33110f1611",
+    "sourceVintage": "2020 Census ZCTA; TIGERweb current service January 1, 2025",
+    "reviewNotes": "2020 ZCTA approximation; not a USPS ZIP boundary or exact ballot match"
+  },
+  "population": {
+    "sourceSlug": "tigerweb-2020-block-population",
+    "endpoint": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Census2020/MapServer/10/query",
+    "parameters": {
+      "f": "json",
+      "where": "1=1",
+      "geometryType": "esriGeometryPolygon",
+      "inSR": "4326",
+      "spatialRel": "esriSpatialRelContains",
+      "outFields": "GEOID,STATE,COUNTY,POP100",
+      "returnGeometry": "false",
+      "resultRecordCount": "100000"
+    },
+    "requestBodySha256": "75664f1275010def2dd874ef80d7b75bad71a1eec668b75261ed866ebc8d37ef",
+    "responseSha256": "60f8c63d9b55488a016dd590938af90d59b0dbb494a3f29e0bef0a4a71a9539f",
+    "expectedBlockCount": 711,
+    "expectedTotalPopulation": 41123,
+    "sourceVintage": "2020 Census blocks and POP100",
+    "reviewNotes": "2020 aggregate block POP100 only; no address or individual data"
+  },
+  "methodologyVersion": "census-zcta-contained-block-pop100-v1",
+  "targets": [
+    {
+      "countyFips": "099",
+      "authoritySlug": "coryell-county",
+      "name": "Coryell County",
+      "expectedPopulation": 38975,
+      "rank": 1
+    },
+    {
+      "countyFips": "281",
+      "authoritySlug": "lampasas-county",
+      "name": "Lampasas County",
+      "expectedPopulation": 2148,
+      "rank": 2
+    }
+  ]
+}

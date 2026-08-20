@@ -69,6 +69,9 @@ verification_events
 | `boundary_datasets` | Reviewed registrations of future official geometry imports | publisher authority, subject authority, source registry, direct URL, checked/effective dates, status, reviewer/date |
 | `boundary_versions` | Time-bounded PostGIS geometry for one civic area | dataset, effective dates, geometry checksum, verification, predecessor |
 | `ballot_geographic_requirements` | Verified combination of civic areas required by an official ballot style | ballot version, publication, area/authority, source document, verifier/date |
+| `browse_areas` | Versioned coarse ZIP/ZCTA, city, or county query areas; never voter locations | normalized query, source document/vintage, geometry checksum, verifier/date |
+| `browse_coverage_estimates` | Reproducible ordering estimates from a browse area to a civic area or ballot | rank, numerator/denominator, percentage, basis, methodology version, calculation/review times |
+| `browse_coverage_evidence` | Source set supporting a calculated coverage estimate | estimate, immutable source document, evidence role |
 | `verification_cadence_policies` | Adjustable source-review timing at organization, publication, or authority scope | scope, stage intervals, updater, timestamps |
 | `source_verification_checks` | Immutable record of a source re-check and its next due time | source, outcome, checker, checked/next-check times; current schedule is updated only by a non-older check |
 | `source_alerts` | Open or resolved stale-source and investigation work | source, alert type, resolution, check linkage, timestamps |
@@ -92,6 +95,10 @@ verification_events
 - Candidate responses are source documents/claims, not automatically verified facts.
 - The schema stores no voter addresses, geocodes, or other voter-entered PII.
 - Boundary storage contains public civic geometry only. Submitted addresses and resolved points have no persistence table.
+- Coarse browse percentages must retain their numerator, denominator,
+  calculation basis, methodology version, and source evidence. Verified
+  estimates and their evidence are immutable; a recalculation creates a new
+  vintage rather than overwriting history.
 - Every accepted source artifact is retained privately. A document defaults to
   `metadata_only` public access; a visible copy requires an approved source
   review that explicitly permits it.

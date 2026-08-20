@@ -43,8 +43,20 @@ user chooses a ballot to inspect; the application does not claim that it is the
 user's assigned ballot. Browse mode does not invoke address resolution and is
 not a silent fallback from a failed address request.
 
-The browse endpoint currently returns `not_available` until verified ballots
-and area indexes exist.
+Responses also carry an explicit `demonstration` flag. In development demo
+mode, the endpoint returns two invented overlap matches for interface review.
+Outside demo mode it returns `not_available` until verified ballots and real
+ZIP/city/county area indexes exist. ZIP input is restricted to ZIP or ZIP+4;
+the endpoint never accepts an address-shaped value as a ZIP browse query.
+
+Available matches are explicitly ranked. A percentage-based ordering records
+`estimatedAreaSharePercent`, a calculation basis, and a source citation; the
+API rejects an unsourced estimate. The first sourced estimate may be labeled
+`mostCommonAreaMatch`, which describes the selected area's residential
+population or address coverage—not the probability that a particular ballot
+belongs to the user. Alternatives remain visible. Land-area estimates are
+supported for provenance but should not drive a “most common” label when a
+residential estimate is available.
 
 ## Evidence carried by a ballot choice
 

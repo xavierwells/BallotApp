@@ -28,6 +28,7 @@ def test_copperas_cove_manifest_has_the_required_pilot_authorities() -> None:
         "copperas-cove-isd",
         "texas-secretary-of-state-elections",
         "texas-legislative-council",
+        "us-census-bureau",
     } <= authority_slugs
     assert all(
         source.get("approvalStatus", "pending_review") == "pending_review"

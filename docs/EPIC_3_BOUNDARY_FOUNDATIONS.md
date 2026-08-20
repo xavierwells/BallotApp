@@ -77,7 +77,7 @@ docker build --target test --tag ballot-api-test apps/api
 docker run --rm ballot-api-test
 ```
 
-Expected migration revision: `011_ballot_area_requirements`. If custom
+Expected migration revision: `012_browse_area_coverage`. If custom
 `POSTGRES_USER` or `POSTGRES_DB` values are set in `.env`, use those in the two
 `psql` commands. Tests use the Dockerfile's dedicated `test` target because the
 security-hardened production API image intentionally contains neither Pytest

@@ -118,6 +118,30 @@
           "permittedUse": "direct_link_manual_check"
         }
       ]
+    },
+    {
+      "slug": "us-census-bureau",
+      "name": "United States Census Bureau",
+      "authorityType": "other",
+      "officialWebsiteUrl": "https://www.census.gov/programs-surveys/geography/guidance/geo-areas/zctas.html",
+      "sources": [
+        {
+          "slug": "tigerweb-2020-zcta",
+          "name": "TIGERweb 2020 Census ZIP Code Tabulation Areas",
+          "sourceUrl": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer/2",
+          "sourceCategory": "boundaries",
+          "monitoringClass": "reference",
+          "permittedUse": "direct_link_manual_check"
+        },
+        {
+          "slug": "tigerweb-2020-block-population",
+          "name": "TIGERweb 2020 Census Blocks and Population",
+          "sourceUrl": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Census2020/MapServer/10",
+          "sourceCategory": "boundaries",
+          "monitoringClass": "reference",
+          "permittedUse": "direct_link_manual_check"
+        }
+      ]
     }
   ]
 }

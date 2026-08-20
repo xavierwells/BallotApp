@@ -1,5 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+import re
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+
+from app.ballot_browsing import BallotBrowser, browser_from_environment
 
 from app.schemas.ballot_resolution import (
     BallotBrowseResponse,
@@ -64,12 +68,11 @@ def resolve_preview(
 )
 def browse_ballots(
     area_type: BrowseAreaType = Query(alias="areaType"),
-    query: str = Query(min_length=1, max_length=255),
+    query: str = Query(min_length=1, max_length=255, pattern=r".*\S.*"),
+    browser: BallotBrowser = Depends(browser_from_environment),
 ) -> BallotBrowseResponse:
-    """Expose the browse contract without pretending ballot data is connected."""
-    return BallotBrowseResponse(
-        status="not_available",
-        area_type=area_type,
-        query=query,
-        message="Ballot browsing is not connected yet. No exact voter match was attempted.",
-    )
+    """Browse a coarse area without accepting or inferring a voter address."""
+    normalized_query = query.strip()
+    if area_type is BrowseAreaType.ZIP and not re.fullmatch(r"\d{5}(?:-\d{4})?", normalized_query):
+        raise HTTPException(status_code=422, detail="ZIP code must use 12345 or 12345-6789 format")
+    return browser.browse(area_type, normalized_query)

@@ -31,6 +31,13 @@ class BrowseAreaType(StrEnum):
     COUNTY = "county"
 
 
+class CoverageBasis(StrEnum):
+    RESIDENTIAL_POPULATION_ESTIMATE = "residential_population_estimate"
+    ADDRESS_COVERAGE_ESTIMATE = "address_coverage_estimate"
+    LAND_AREA_ESTIMATE = "land_area_estimate"
+    UNAVAILABLE = "unavailable"
+
+
 class ResolutionStatus(StrEnum):
     RESOLVED = "resolved"
     AMBIGUOUS = "ambiguous"
@@ -142,6 +149,11 @@ class BrowseBallotMatch(PublicModel):
     ballot: BallotChoice
     geographic_support: list[GeographicSupport] = Field(min_length=1)
     relationship: Literal["within", "overlaps"]
+    rank: int = Field(ge=1)
+    estimated_area_share_percent: float | None = Field(default=None, ge=0, le=100)
+    coverage_basis: CoverageBasis = CoverageBasis.UNAVAILABLE
+    coverage_source: SourceCitation | None = None
+    most_common_area_match: bool = False
     explanation: str = Field(min_length=1, max_length=2000)
 
 
@@ -150,6 +162,7 @@ class BallotBrowseResponse(PublicModel):
     area_type: BrowseAreaType
     query: str = Field(min_length=1, max_length=255)
     exact_match: Literal[False] = False
+    demonstration: bool = False
     message: str = Field(min_length=1, max_length=2000)
     matches: list[BrowseBallotMatch] = Field(default_factory=list)
 
@@ -159,4 +172,27 @@ class BallotBrowseResponse(PublicModel):
             raise ValueError("available browse responses require at least one ballot")
         if self.status != "available" and self.matches:
             raise ValueError("only available browse responses may contain ballots")
+        if self.matches:
+            ranks = [match.rank for match in self.matches]
+            if ranks != list(range(1, len(self.matches) + 1)):
+                raise ValueError("browse matches must be ordered with consecutive ranks")
+            for match in self.matches:
+                has_estimate = match.estimated_area_share_percent is not None
+                has_provenance = match.coverage_basis is not CoverageBasis.UNAVAILABLE and match.coverage_source is not None
+                if has_estimate != has_provenance:
+                    raise ValueError("browse coverage estimates require a calculation basis and source")
+            if all(match.estimated_area_share_percent is not None for match in self.matches):
+                estimates = [match.estimated_area_share_percent for match in self.matches]
+                if estimates != sorted(estimates, reverse=True):
+                    raise ValueError("estimated browse matches must be ranked by descending share")
+            common = [match for match in self.matches if match.most_common_area_match]
+            if len(common) > 1:
+                raise ValueError("browse responses may identify at most one most-common area match")
+            if common and (
+                common[0].rank != 1
+                or common[0].estimated_area_share_percent is None
+                or common[0].coverage_basis is CoverageBasis.UNAVAILABLE
+                or common[0].coverage_source is None
+            ):
+                raise ValueError("a most-common area match requires a sourced estimate at rank one")
         return self

@@ -53,7 +53,8 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'election_authorities', 'authority_source_registry', "
                     "'verification_cadence_policies', 'source_verification_checks', 'source_alerts', "
                     "'geographic_areas', 'boundary_datasets', 'boundary_versions', "
-                    "'ballot_geographic_requirements')"
+                    "'ballot_geographic_requirements', 'browse_areas', "
+                    "'browse_coverage_estimates', 'browse_coverage_evidence')"
                 )
             )
         }
@@ -83,7 +84,9 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'boundary_datasets_final_immutable', "
                     "'boundary_versions_verified_immutable', "
                     "'ballot_area_requirements_final_immutable', "
-                    "'ballot_versions_require_geography')"
+                    "'ballot_versions_require_geography', "
+                    "'browse_areas_final_immutable', 'browse_estimates_final_immutable', "
+                    "'browse_evidence_final_immutable')"
                 )
             )
         }
@@ -116,12 +119,20 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                 "AND f_geometry_column = 'boundary'"
             )
         ).mappings().one()
+        browse_geometry = connection.execute(
+            text(
+                "SELECT type, srid FROM geometry_columns "
+                "WHERE f_table_schema = 'public' AND f_table_name = 'browse_areas' "
+                "AND f_geometry_column = 'boundary'"
+            )
+        ).mappings().one()
 
-    assert len(tables) == 21
+    assert len(tables) == 24
     assert {"draft", "verified", "published", "retracted", "superseded"} <= claim_statuses
-    assert len(trigger_names) == 13
+    assert len(trigger_names) == 16
     assert postgis_version
     assert boundary_geometry == {"type": "MULTIPOLYGON", "srid": 4326}
+    assert browse_geometry == {"type": "MULTIPOLYGON", "srid": 4326}
     assert document_columns == {"artifact_retention", "public_access_level", "content_length_bytes"}
     assert source_registry_columns == {
         "monitoring_class",

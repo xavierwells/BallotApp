@@ -6,6 +6,11 @@ type Citation = { authorityName: string; sourceUrl: string; checkedAt: string; s
 type Support = { geographicAreaId: string; areaType: string; name: string; boundaryVersionId: string; explanation: string; source: Citation };
 type Ballot = { ballotVersionId: string; label: string; electionName: string; electionDate: string; officialSource: Citation };
 type PlausibleBallot = { ballot: Ballot; supportedBy: Support[]; explanation: string };
+type CoverageBasis = "residential_population_estimate" | "address_coverage_estimate" | "land_area_estimate" | "unavailable";
+type BrowseMatch = { ballot: Ballot; geographicSupport: Support[]; relationship: "within" | "overlaps";
+  rank: number; estimatedAreaSharePercent: number | null; coverageBasis: CoverageBasis;
+  coverageSource: Citation | null; mostCommonAreaMatch: boolean; explanation: string };
+type BrowseResponse = { status: string; areaType: "zip" | "city" | "county"; query: string; exactMatch: false; demonstration: boolean; message: string; matches: BrowseMatch[] };
 type Resolution = {
   status: string; message?: string; confidence?: number; addressPersisted: false;
   demonstration: boolean; reasonCodes: string[]; ballot?: Ballot; supportedBy?: Support[];
@@ -21,6 +26,13 @@ const reasonLabels: Record<string, string> = {
   ballot_data_unavailable: "Required official ballot data is not available yet.",
 };
 
+const coverageBasisLabels: Record<CoverageBasis, string> = {
+  residential_population_estimate: "estimated residential population",
+  address_coverage_estimate: "estimated residential addresses",
+  land_area_estimate: "estimated land area",
+  unavailable: "deterministic ordering; no coverage estimate available",
+};
+
 function CitationView({ citation, demo }: { citation: Citation; demo: boolean }) {
   return (
     <p className="citation">
@@ -31,23 +43,37 @@ function CitationView({ citation, demo }: { citation: Citation; demo: boolean })
   );
 }
 
-function BallotCard({ ballot, support, demo, variant = "resolved", explanation, position, total }: {
-  ballot: Ballot; support: Support[]; demo: boolean; variant?: "resolved" | "plausible";
-  explanation?: string; position?: number; total?: number;
+function BallotCard({ ballot, support, demo, variant = "resolved", explanation, position, total, browseRanking }: {
+  ballot: Ballot; support: Support[]; demo: boolean; variant?: "resolved" | "plausible" | "browse";
+  explanation?: string; position?: number; total?: number; browseRanking?: BrowseMatch;
 }) {
   const plausible = variant === "plausible";
+  const browse = variant === "browse";
   return (
     <article className={`ballot-card${plausible ? " plausible-ballot" : ""}`}>
+      {browse && browseRanking?.mostCommonAreaMatch && (
+        <p className="most-common-badge">Most common area match</p>
+      )}
       <p className="result-label">
-        {plausible ? `Possible ballot ${position} of ${total}` : "Resolved ballot"}
+        {plausible ? `Possible ballot ${position} of ${total}` : browse ? `Area match ${position} of ${total}` : "Resolved ballot"}
       </p>
       <h2>{ballot.label}</h2>
       <p className="election-meta">
         {ballot.electionName} · {new Date(`${ballot.electionDate}T00:00:00Z`).toLocaleDateString("en-US", { dateStyle: "long", timeZone: "UTC" })}
       </p>
       <CitationView citation={ballot.officialSource} demo={demo} />
-      {plausible && explanation && <p className="possibility-explanation">{explanation}</p>}
-      <h3>{plausible ? "Geography supporting this possibility" : "Why this ballot matched"}</h3>
+      {browse && browseRanking && (
+        <div className="coverage-summary">
+          {browseRanking.estimatedAreaSharePercent !== null ? <>
+            <strong>Approximately {browseRanking.estimatedAreaSharePercent}%</strong>
+            {` of the selected area's ${coverageBasisLabels[browseRanking.coverageBasis]}.`}
+          </> : <span>{coverageBasisLabels[browseRanking.coverageBasis]}.</span>}
+          <p>This ordering describes the selected area; it does not identify a voter&apos;s ballot.</p>
+          {browseRanking.coverageSource && <CitationView citation={browseRanking.coverageSource} demo={demo} />}
+        </div>
+      )}
+      {(plausible || browse) && explanation && <p className="possibility-explanation">{explanation}</p>}
+      <h3>{plausible ? "Geography supporting this possibility" : browse ? "Why this ballot appears in the area" : "Why this ballot matched"}</h3>
       <ul className="support-list">
         {support.map((item) => (
           <li key={item.boundaryVersionId}>
@@ -59,6 +85,28 @@ function BallotCard({ ballot, support, demo, variant = "resolved", explanation, 
         ))}
       </ul>
     </article>
+  );
+}
+
+function BrowseResults({ result }: { result: BrowseResponse }) {
+  if (result.status !== "available" || result.matches.length === 0) {
+    return <p className="notice" role="status">{result.message}</p>;
+  }
+  return (
+    <div className="comparison" aria-labelledby="browse-results-title">
+      <header className="comparison-header browse-header">
+        <p className="result-label">Area browsing — not an exact match</p>
+        <h2 id="browse-results-title">Ballots found around {result.query}</h2>
+        <p>{result.message}</p>
+        <p className="comparison-warning"><strong>These results do not identify your ballot.</strong>{" "}
+          A ZIP code, city, or county can contain multiple precincts and districts.</p>
+      </header>
+      <div className="candidate-list">
+        {result.matches.map((item, index) => <BallotCard key={item.ballot.ballotVersionId}
+          ballot={item.ballot} support={item.geographicSupport} demo={result.demonstration} variant="browse"
+          explanation={item.explanation} position={index + 1} total={result.matches.length} browseRanking={item} />)}
+      </div>
+    </div>
   );
 }
 
@@ -94,13 +142,17 @@ function UnresolvedComparison({ resolution }: { resolution: Resolution }) {
 }
 
 export default function Home() {
+  const [mode, setMode] = useState<"address" | "browse">("address");
   const [address, setAddress] = useState("");
   const [resolution, setResolution] = useState<Resolution | null>(null);
+  const [browseAreaType, setBrowseAreaType] = useState<"zip" | "city" | "county">("city");
+  const [browseQuery, setBrowseQuery] = useState("");
+  const [browseResult, setBrowseResult] = useState<BrowseResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(null); setResolution(null); setLoading(true);
+    event.preventDefault(); setError(null); setResolution(null); setBrowseResult(null); setLoading(true);
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
       const response = await fetch(`${baseUrl}/api/v1/ballots/resolve`, {
@@ -113,22 +165,63 @@ export default function Home() {
     } finally { setAddress(""); setLoading(false); }
   }
 
+  async function handleBrowse(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setError(null); setResolution(null); setBrowseResult(null); setLoading(true);
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+      const parameters = new URLSearchParams({ areaType: browseAreaType, query: browseQuery });
+      const response = await fetch(`${baseUrl}/api/v1/ballots/browse?${parameters}`);
+      if (!response.ok) throw new Error("The ballot browsing service is temporarily unavailable.");
+      setBrowseResult((await response.json()) as BrowseResponse);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Something went wrong.");
+    } finally { setLoading(false); }
+  }
+
+  function changeMode(nextMode: "address" | "browse") {
+    setMode(nextMode); setError(null); setResolution(null); setBrowseResult(null);
+  }
+
   return (
     <main>
       <section className="hero" aria-labelledby="page-title">
         <p className="eyebrow">Copperas Cove pilot</p>
         <h1 id="page-title">What&apos;s on your ballot?</h1>
         <p className="intro">Every race. Every candidate. Every proposition. Explained and sourced.</p>
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="address">Enter your address</label>
-          <div className="form-row">
-            <input id="address" name="address" autoComplete="street-address" value={address}
-              onChange={(event) => setAddress(event.target.value)} placeholder="123 Main St, Copperas Cove, TX"
-              minLength={5} maxLength={300} required />
-            <button type="submit" disabled={loading}>{loading ? "Checking…" : "Show my ballot"}</button>
-          </div>
-        </form>
-        <p className="privacy">Your address is used only to find your ballot. We do not save it.</p>
+        <div className="mode-switch" role="group" aria-label="How to find ballots">
+          <button type="button" className={mode === "address" ? "active" : "secondary"} aria-pressed={mode === "address"}
+            onClick={() => changeMode("address")}>Use my address</button>
+          <button type="button" className={mode === "browse" ? "active" : "secondary"} aria-pressed={mode === "browse"}
+            onClick={() => changeMode("browse")}>Browse without an address</button>
+        </div>
+        {mode === "address" ? <>
+          <form onSubmit={handleSubmit}>
+            <label htmlFor="address">Enter your address</label>
+            <div className="form-row">
+              <input id="address" name="address" autoComplete="street-address" value={address}
+                onChange={(event) => setAddress(event.target.value)} placeholder="123 Main St, Copperas Cove, TX"
+                minLength={5} maxLength={300} required />
+              <button type="submit" disabled={loading}>{loading ? "Checking…" : "Show my ballot"}</button>
+            </div>
+          </form>
+          <p className="privacy">Your address is used only to find your ballot. We do not save it.</p>
+        </> : <>
+          <form onSubmit={handleBrowse}>
+            <label htmlFor="browse-query">Browse ballots by area</label>
+            <div className="form-row browse-row">
+              <select aria-label="Area type" value={browseAreaType}
+                onChange={(event) => setBrowseAreaType(event.target.value as "zip" | "city" | "county") }>
+                <option value="zip">ZIP code</option><option value="city">City</option><option value="county">County</option>
+              </select>
+              <input id="browse-query" name="query" value={browseQuery} onChange={(event) => setBrowseQuery(event.target.value)}
+                placeholder={browseAreaType === "zip" ? "76522" : browseAreaType === "city" ? "Copperas Cove" : "Coryell County"}
+                minLength={1} maxLength={255} pattern={browseAreaType === "zip" ? "[0-9]{5}(-[0-9]{4})?" : undefined}
+                title={browseAreaType === "zip" ? "Enter a 5-digit ZIP code or ZIP+4" : undefined} required />
+              <button type="submit" disabled={loading}>{loading ? "Searching…" : "Browse ballots"}</button>
+            </div>
+          </form>
+          <p className="privacy">Area browsing shows possible ballots. It cannot determine your exact ballot.</p>
+        </>}
       </section>
 
       {resolution && (
@@ -145,6 +238,11 @@ export default function Home() {
           <p className="privacy-confirmation">Address saved: no</p>
         </section>
       )}
+      {browseResult && <section className="results" aria-live="polite">
+        {browseResult.demonstration && <div className="demo-banner" role="status"><strong>Synthetic demonstration</strong>
+          <span>No real ballot or geographic data is shown.</span></div>}
+        <BrowseResults result={browseResult} />
+      </section>}
       {error && <section className="results"><p className="notice error" role="alert">{error}</p></section>}
 
       <section className="principles" aria-label="Product commitments">

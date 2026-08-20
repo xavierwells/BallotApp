@@ -37,6 +37,7 @@ services:
       - document_data:/var/lib/ballot/documents
       - ./data/authorities:/app/data/authorities:ro
       - ./data/boundaries:/app/data/boundaries:ro
+      - ./data/browse:/app/data/browse:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
