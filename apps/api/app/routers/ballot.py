@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
 from app.schemas.ballot_resolution import (
     BallotBrowseResponse,
     BallotResolutionResponse,
     BrowseAreaType,
-    NotAvailableResponse,
 )
+from app.resolution_pipeline import ResolutionPipeline, pipeline_from_environment
 
 router = APIRouter(prefix="/ballots", tags=["ballots"])
 
@@ -26,10 +26,9 @@ class AddressResolutionRequest(BaseModel):
     "/resolve",
     summary="Resolve an address without retaining it",
     description=(
-        "Contract-first endpoint. Until the approved geocoder and authoritative "
-        "boundary matcher are connected, it returns `not_available`. The final "
-        "contract supports exact, ambiguous, source-conflict, needs-review, and "
-        "not-found results."
+        "Runs the configured request-scoped geocoder, verified-boundary resolver, "
+        "and combination ballot matcher. It fails closed as `not_available` until "
+        "an approved provider and reviewed election context are configured."
     ),
     response_model=BallotResolutionResponse,
     response_model_by_alias=True,
@@ -41,13 +40,12 @@ class AddressResolutionRequest(BaseModel):
     response_model_by_alias=True,
     deprecated=True,
 )
-def resolve_preview(request: AddressResolutionRequest) -> BallotResolutionResponse:
-    """Accept an address ephemerally; no geocoder or storage is connected yet."""
-    del request
-    return NotAvailableResponse(
-        status="not_available",
-        message="Ballot resolution is not connected yet. The submitted address was discarded.",
-    )
+def resolve_preview(
+    request: AddressResolutionRequest,
+    pipeline: ResolutionPipeline = Depends(pipeline_from_environment),
+) -> BallotResolutionResponse:
+    """Resolve an address in request memory and discard it before returning."""
+    return pipeline.resolve(request.address)
 
 
 @router.get(

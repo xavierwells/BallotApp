@@ -39,6 +39,19 @@ def test_address_preview_rejects_an_invalid_address() -> None:
     )
 
     assert response.status_code == 422
+    assert '"input"' not in response.text
+    assert "no" not in response.text
+
+
+def test_address_validation_does_not_echo_a_long_submitted_value() -> None:
+    submitted_value = "Synthetic Private Address " + ("x" * 300)
+    response = client.post(
+        "/api/v1/ballots/resolve",
+        json={"address": submitted_value},
+    )
+
+    assert response.status_code == 422
+    assert submitted_value not in response.text
 
 
 def test_browse_contract_is_explicitly_not_an_exact_match() -> None:

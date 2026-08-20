@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Protocol
 from uuid import UUID
@@ -37,7 +37,10 @@ class BoundaryMembership:
     authority_id: UUID
     area_type: str
     area_name: str
+    authority_name: str
     source_url: str
+    source_checked_at: datetime
+    source_label: str
     on_boundary_edge: bool
 
     @property
@@ -73,13 +76,17 @@ class PostgisBoundaryRepository:
             rows = connection.execute(
                 text(
                     "SELECT bv.id AS boundary_version_id, ga.id AS geographic_area_id, "
-                    "bv.authority_id, ga.area_type, ga.name AS area_name, bd.source_url, "
+                    "bv.authority_id, ga.area_type, ga.name AS area_name, "
+                    "subject.name AS authority_name, bd.source_url, bd.checked_at AS source_checked_at, "
+                    "publisher.name || ' boundary dataset' AS source_label, "
                     f"ST_Touches(bv.boundary, {point_sql}) AS on_boundary_edge "
                     "FROM boundary_versions bv "
                     "JOIN geographic_areas ga ON ga.id = bv.geographic_area_id "
                     "AND ga.authority_id = bv.authority_id "
                     "JOIN boundary_datasets bd ON bd.id = bv.boundary_dataset_id "
                     "AND bd.subject_authority_id = bv.authority_id "
+                    "JOIN election_authorities subject ON subject.id = bv.authority_id "
+                    "JOIN election_authorities publisher ON publisher.id = bd.publisher_authority_id "
                     "WHERE bv.status = 'verified' AND ga.status = 'active' "
                     "AND bv.effective_from <= :effective_on "
                     "AND (bv.effective_to IS NULL OR bv.effective_to >= :effective_on) "

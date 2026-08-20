@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import UTC, date, datetime
 from uuid import UUID
 
 import pytest
@@ -33,7 +33,10 @@ def membership(number: int, *, area_type: str = "voting_precinct", edge: bool = 
         authority_id=AUTHORITY_ID,
         area_type=area_type,
         area_name=f"Synthetic area {number}",
+        authority_name="Synthetic Authority",
         source_url="https://example.test/synthetic-boundaries",
+        source_checked_at=datetime(2026, 8, 20, tzinfo=UTC),
+        source_label="Synthetic boundary dataset",
         on_boundary_edge=edge,
     )
 

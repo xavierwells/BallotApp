@@ -49,6 +49,9 @@ product/operational decision.
 
 Because the platform does not retain addresses, `needs_review` cannot create a queue containing a raw address. The user receives a clear uncertainty response and official election-authority contact path. A future opt-in support workflow would require a separate privacy review before accepting any address.
 
+Request-validation errors are sanitized so FastAPI does not echo an invalid
+submitted address in a `422` response.
+
 ## Browse mode versus address resolution
 
 | Path | What the user provides | What the product may claim |
@@ -60,6 +63,14 @@ Browse mode is not a fallback that silently turns an unresolved address into a
 ZIP-level match. The interface must visibly switch modes and explain the lower
 precision. Neither mode stores the entered address or associates browsing with
 a voter profile.
+
+## Runtime activation
+
+The API orchestration pipeline is connected, but production activation is
+fail-closed. `GEOCODER_PROVIDER` must be approved and enabled, while
+`BALLOT_RESOLUTION_PUBLICATION_ID`, `BALLOT_RESOLUTION_ELECTION_ID`, and
+`BALLOT_RESOLUTION_ELECTION_DATE` must identify the reviewed election. Missing
+or invalid context never causes the API to guess which election applies.
 
 ## Data refresh and audit
 

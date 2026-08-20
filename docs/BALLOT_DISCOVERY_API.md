@@ -18,7 +18,7 @@ The response is a discriminated union selected by `status`:
 | `source_conflict` | Authoritative boundary or ballot-style sources support different results. | At least two distinct plausible ballot versions, each retaining its supporting source. |
 | `needs_review` | Evidence is insufficient for a final result but may identify possibilities. | Zero or more plausible ballots plus official contact links. |
 | `not_found` | No evidence-backed ballot candidate was found. | No ballot; explanatory message and official contact links. |
-| `not_available` | The resolver infrastructure is not connected. | No ballot. This is the current implementation response. |
+| `not_available` | The provider, reviewed election context, or required published evidence is unavailable. | No ballot; the pipeline fails closed rather than guessing. |
 
 Reason codes are stable machine-readable values such as
 `low_geocode_confidence`, `near_boundary`, `boundary_source_conflict`, and
@@ -53,4 +53,3 @@ and official ballot citation. Geographic support additionally identifies the
 named area, boundary version, explanation, authority, source URL, and check
 time. This makes an exact or unresolved result auditable without storing the
 voter's address or coordinate.
-
