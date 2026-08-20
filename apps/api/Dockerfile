@@ -1,4 +1,15 @@
-FROM python:3.13-slim AS base
+FROM python:3.13-alpine AS wheels
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /build
+COPY requirements.txt requirements-dev.txt ./
+RUN apk add --no-cache build-base libffi-dev \
+    && python -m pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+
+FROM python:3.13-alpine AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -6,7 +17,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 COPY requirements.txt requirements-dev.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=wheels /wheels /wheels
+RUN python -m pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt \
+    && rm -rf /wheels
 
 FROM base AS test
 RUN pip install --no-cache-dir -r requirements-dev.txt
