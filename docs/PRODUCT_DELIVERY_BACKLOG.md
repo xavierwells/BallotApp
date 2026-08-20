@@ -49,7 +49,7 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ### Exit criteria
 
-- [ ] A clean environment can boot the documented stack. (Pending verification on a Docker-equipped host.)
+- [x] A clean environment can boot the documented stack. (Verified with Docker Compose on 2026-08-20: web and API health endpoints returned HTTP 200.)
 - [ ] CI runs tests and policy checks on every change. (Workflow is present; enable it only after runner-cost approval.)
 - [x] No approved external service is required for the current scaffold to function.
 

@@ -41,7 +41,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-ballot}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # PostgreSQL 18+ manages major-version-specific data directories below
+      # this path.  Mounting the parent preserves the image's supported layout.
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ballot} -d ${POSTGRES_DB:-ballot}"]
       interval: 10s
