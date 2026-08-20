@@ -144,10 +144,37 @@ class ResolutionPipeline:
             )
         assert geocode.longitude is not None and geocode.latitude is not None
 
+        return self._resolve_point(longitude=geocode.longitude, latitude=geocode.latitude)
+
+    def resolve_location(
+        self, *, longitude: float, latitude: float, accuracy_meters: float
+    ) -> BallotResolutionResponse:
+        """Resolve a browser-provided location without retaining or echoing it."""
+        if self.context is None or not all(
+            (self.boundary_resolver, self.ballot_matcher, self.ballot_catalog)
+        ):
+            return NotAvailableResponse(
+                message="Ballot resolution is not configured for an active election. The submitted location was discarded."
+            )
+        return self._resolve_point(
+            longitude=longitude,
+            latitude=latitude,
+            uncertainty_meters=accuracy_meters,
+        )
+
+    def _resolve_point(
+        self, *, longitude: float, latitude: float, uncertainty_meters: float = 0
+    ) -> BallotResolutionResponse:
+        assert self.context is not None
+        assert self.boundary_resolver is not None
+        assert self.ballot_matcher is not None
+        assert self.ballot_catalog is not None
+
         boundary_result = self.boundary_resolver.resolve(
-            longitude=geocode.longitude,
-            latitude=geocode.latitude,
+            longitude=longitude,
+            latitude=latitude,
             effective_on=self.context.election_date,
+            uncertainty_meters=uncertainty_meters,
         )
         if boundary_result.status is BoundaryResolutionStatus.NOT_FOUND:
             return NotFoundResponse(
@@ -227,6 +254,15 @@ class SyntheticDemoResolutionPipeline:
 
     def resolve(self, address: str) -> BallotResolutionResponse:
         del address
+        return self._fixture()
+
+    def resolve_location(
+        self, *, longitude: float, latitude: float, accuracy_meters: float
+    ) -> BallotResolutionResponse:
+        del longitude, latitude, accuracy_meters
+        return self._fixture()
+
+    def _fixture(self) -> BallotResolutionResponse:
         checked_at = datetime(2026, 8, 20, tzinfo=UTC)
         source = SourceCitation(
             authority_name="Synthetic demo authority — not official",

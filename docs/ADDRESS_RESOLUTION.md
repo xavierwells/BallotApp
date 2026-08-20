@@ -2,6 +2,14 @@
 
 The address-to-ballot engine must favor a transparent “not confident” response over a guessed ballot.
 
+Voters may alternatively choose **Use my current location** when they are physically
+at their registered home. The browser asks permission and sends the coordinate and
+reported accuracy radius directly to the request-scoped resolver. The coordinate is
+not sent to the geocoder, persisted, echoed in the response, placed in a URL, or held
+in client state. If the accuracy radius approaches a district boundary, resolution is
+treated as ambiguous instead of selecting an exact ballot. Browser geolocation requires
+HTTPS in deployed environments (localhost is permitted for development).
+
 The product also supports a separate **browse mode** for people who do not want
 to enter an address. Browse mode lists available ballots by ZIP code, city, or
 county, but never claims that one of those ballots is the voter's exact ballot.
@@ -58,6 +66,7 @@ submitted address in a `422` response.
 | --- | --- | --- |
 | Browse by ZIP, city, or county | A coarse place selected by the user | “These ballots are available in or overlap this area; choose one to view.” |
 | Resolve an address | A request-scoped address that is discarded | Either one evidence-backed exact ballot, or an explicitly unresolved set of plausible ballots. |
+| Use current location | A request-scoped coordinate and browser accuracy radius that are discarded | The same evidence-backed result, with the accuracy radius included in boundary uncertainty checks. |
 
 Browse mode is not a fallback that silently turns an unresolved address into a
 ZIP-level match. The interface must visibly switch modes and explain the lower

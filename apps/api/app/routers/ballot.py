@@ -30,6 +30,14 @@ class AddressResolutionRequest(BaseModel):
     )
 
 
+class LocationResolutionRequest(BaseModel):
+    """Request-only browser location. Coordinates must never be persisted or logged."""
+
+    longitude: float = Field(ge=-180, le=180)
+    latitude: float = Field(ge=-90, le=90)
+    accuracy_meters: float = Field(alias="accuracyMeters", ge=0, le=10_000)
+
+
 @router.post(
     "/resolve",
     summary="Resolve an address without retaining it",
@@ -54,6 +62,27 @@ def resolve_preview(
 ) -> BallotResolutionResponse:
     """Resolve an address in request memory and discard it before returning."""
     return pipeline.resolve(request.address)
+
+
+@router.post(
+    "/resolve-location",
+    summary="Resolve a current location without retaining it",
+    description=(
+        "Accepts a browser-provided coordinate and accuracy radius for this request only. "
+        "The values are not stored or returned, and uncertain boundary matches fail closed."
+    ),
+    response_model=BallotResolutionResponse,
+    response_model_by_alias=True,
+)
+def resolve_location(
+    request: LocationResolutionRequest,
+    pipeline: ResolutionPipeline | SyntheticDemoResolutionPipeline = Depends(pipeline_from_environment),
+) -> BallotResolutionResponse:
+    return pipeline.resolve_location(
+        longitude=request.longitude,
+        latitude=request.latitude,
+        accuracy_meters=request.accuracy_meters,
+    )
 
 
 @router.get(

@@ -9,8 +9,12 @@ type PlausibleBallot = { ballot: Ballot; supportedBy: Support[]; explanation: st
 type CoverageBasis = "residential_population_estimate" | "address_coverage_estimate" | "land_area_estimate" | "unavailable";
 type BrowseMatch = { ballot: Ballot; geographicSupport: Support[]; relationship: "within" | "overlaps";
   rank: number; estimatedAreaSharePercent: number | null; coverageBasis: CoverageBasis;
-  coverageSource: Citation | null; mostCommonAreaMatch: boolean; explanation: string };
-type BrowseResponse = { status: string; areaType: "zip" | "city" | "county"; query: string; exactMatch: false; demonstration: boolean; message: string; matches: BrowseMatch[] };
+  coverageSources: Citation[]; mostCommonAreaMatch: boolean; explanation: string };
+type BrowseAreaMatch = { geographicAreaId: string; name: string; areaType: string; rank: number;
+  estimatedAreaSharePercent: number; coverageBasis: CoverageBasis; coverageSources: Citation[];
+  mostCommonAreaMatch: boolean; explanation: string };
+type BrowseResponse = { status: string; areaType: "zip" | "city" | "county"; query: string; exactMatch: false;
+  demonstration: boolean; message: string; matches: BrowseMatch[]; areaMatches: BrowseAreaMatch[] };
 type Resolution = {
   status: string; message?: string; confidence?: number; addressPersisted: false;
   demonstration: boolean; reasonCodes: string[]; ballot?: Ballot; supportedBy?: Support[];
@@ -69,7 +73,8 @@ function BallotCard({ ballot, support, demo, variant = "resolved", explanation, 
             {` of the selected area's ${coverageBasisLabels[browseRanking.coverageBasis]}.`}
           </> : <span>{coverageBasisLabels[browseRanking.coverageBasis]}.</span>}
           <p>This ordering describes the selected area; it does not identify a voter&apos;s ballot.</p>
-          {browseRanking.coverageSource && <CitationView citation={browseRanking.coverageSource} demo={demo} />}
+          {browseRanking.coverageSources.map((citation) => <CitationView key={`${citation.sourceUrl}-${citation.sourceLabel}`}
+            citation={citation} demo={demo} />)}
         </div>
       )}
       {(plausible || browse) && explanation && <p className="possibility-explanation">{explanation}</p>}
@@ -89,18 +94,31 @@ function BallotCard({ ballot, support, demo, variant = "resolved", explanation, 
 }
 
 function BrowseResults({ result }: { result: BrowseResponse }) {
-  if (result.status !== "available" || result.matches.length === 0) {
+  if (result.status !== "available" || (result.matches.length === 0 && result.areaMatches.length === 0)) {
     return <p className="notice" role="status">{result.message}</p>;
   }
   return (
     <div className="comparison" aria-labelledby="browse-results-title">
       <header className="comparison-header browse-header">
         <p className="result-label">Area browsing — not an exact match</p>
-        <h2 id="browse-results-title">Ballots found around {result.query}</h2>
+        <h2 id="browse-results-title">{result.matches.length > 0 ? "Ballots" : "Geographic matches"} found around {result.query}</h2>
         <p>{result.message}</p>
         <p className="comparison-warning"><strong>These results do not identify your ballot.</strong>{" "}
           A ZIP code, city, or county can contain multiple precincts and districts.</p>
       </header>
+      {result.areaMatches.length > 0 && <section className="area-match-list" aria-label="Ranked geographic area matches">
+        {result.areaMatches.map((item) => <article className="area-match-card" key={item.geographicAreaId}>
+          {item.mostCommonAreaMatch && <p className="most-common-badge">Most common area match</p>}
+          <p className="result-label">Area match {item.rank} of {result.areaMatches.length}</p>
+          <h3>{item.name}</h3>
+          <p className="area-percentage"><strong>Approximately {item.estimatedAreaSharePercent}%</strong>{" "}
+            of the selected area&apos;s {coverageBasisLabels[item.coverageBasis]}.</p>
+          <p>{item.explanation}</p>
+          {item.coverageSources.map((citation) => <CitationView key={`${citation.sourceUrl}-${citation.sourceLabel}`}
+            citation={citation} demo={result.demonstration} />)}
+          <p className="no-ballot-notice">No ballot has been selected from this area estimate.</p>
+        </article>)}
+      </section>}
       <div className="candidate-list">
         {result.matches.map((item, index) => <BallotCard key={item.ballot.ballotVersionId}
           ballot={item.ballot} support={item.geographicSupport} demo={result.demonstration} variant="browse"
@@ -150,6 +168,8 @@ export default function Home() {
   const [browseResult, setBrowseResult] = useState<BrowseResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(null); setResolution(null); setBrowseResult(null); setLoading(true);
@@ -178,8 +198,42 @@ export default function Home() {
     } finally { setLoading(false); }
   }
 
+  function handleUseLocation() {
+    setError(null); setLocationError(null); setResolution(null); setBrowseResult(null);
+    if (!("geolocation" in navigator)) {
+      setLocationError("Location services are not available in this browser. Enter your registered home address instead.");
+      return;
+    }
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+        const response = await fetch(`${baseUrl}/api/v1/ballots/resolve-location`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            longitude: position.coords.longitude,
+            latitude: position.coords.latitude,
+            accuracyMeters: position.coords.accuracy,
+          }),
+        });
+        if (!response.ok) throw new Error("The ballot service is temporarily unavailable.");
+        setResolution((await response.json()) as Resolution);
+      } catch (requestError) {
+        setLocationError(requestError instanceof Error ? requestError.message : "Something went wrong.");
+      } finally { setLocationLoading(false); }
+    }, (geolocationError) => {
+      const messages: Record<number, string> = {
+        1: "Location permission was denied. Enter your registered home address instead.",
+        2: "Your location is unavailable. Enter your registered home address instead.",
+        3: "The location request timed out. Try again or enter your registered home address.",
+      };
+      setLocationError(messages[geolocationError.code] ?? "Your location could not be read. Enter your registered home address instead.");
+      setLocationLoading(false);
+    }, { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 });
+  }
+
   function changeMode(nextMode: "address" | "browse") {
-    setMode(nextMode); setError(null); setResolution(null); setBrowseResult(null);
+    setMode(nextMode); setError(null); setLocationError(null); setResolution(null); setBrowseResult(null);
   }
 
   return (
@@ -200,11 +254,22 @@ export default function Home() {
             <div className="form-row">
               <input id="address" name="address" autoComplete="street-address" value={address}
                 onChange={(event) => setAddress(event.target.value)} placeholder="123 Main St, Copperas Cove, TX"
-                minLength={5} maxLength={300} required />
-              <button type="submit" disabled={loading}>{loading ? "Checking…" : "Show my ballot"}</button>
+                autoCapitalize="words" spellCheck={false} minLength={5} maxLength={300} required />
+              <button type="submit" disabled={loading || locationLoading}>{loading ? "Checking…" : "Show my ballot"}</button>
             </div>
           </form>
           <p className="privacy">Your address is used only to find your ballot. We do not save it.</p>
+          <div className="location-option">
+            <span aria-hidden="true">or</span>
+            <button type="button" className="location-button" onClick={handleUseLocation}
+              disabled={loading || locationLoading} aria-describedby="location-warning">
+              {locationLoading ? "Getting location…" : "Use my current location"}
+            </button>
+            <p id="location-warning" className="location-warning">
+              Use this only if you are currently at your registered home address. Your location is used once and is not saved.
+            </p>
+            {locationError && <p className="location-error" role="alert">{locationError}</p>}
+          </div>
         </> : <>
           <form onSubmit={handleBrowse}>
             <label htmlFor="browse-query">Browse ballots by area</label>

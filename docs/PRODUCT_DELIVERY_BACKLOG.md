@@ -124,6 +124,7 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 ### Stories
 
 - As a voter, I receive the ballot style that applies to my location, not a generic city or ZIP-code ballot.
+- As a voter currently at my registered home, I can use browser location services instead of typing an address; the coordinate is used once and discarded.
 - As a voter who does not want to enter an address, I can browse and choose among ballots available by ZIP code, city, or county without the product claiming an exact match.
 - As a researcher, I can import, version, and reconcile official precinct and district boundaries.
 - As a voter whose address cannot be resolved to one ballot, I can compare the plausible ballots with an explanation of which geography and source supports each one.
@@ -136,10 +137,12 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [ ] Import official county, precinct, municipal, school-district, legislative, and special-district boundaries. TLC's pinned 2026-primary precinct reference was successfully imported on 2026-08-20 as 72 Bell, 16 Coryell, and 10 Lampasas draft boundaries. Local-authority confirmation for November use remains open; municipal, school, legislative, and special-district sources remain separate work.
 - [x] Implement self-owned point-in-polygon jurisdiction resolution. The request-scoped PostGIS resolver uses only active areas and effective verified boundary versions, detects exact edges and overlapping-source conflicts, and returns no coordinates; ballot-style mapping remains separate.
 - [x] Define and implement confidence, ambiguity, source-conflict, and not-found result models. The request-scoped pipeline connects geocoding, verified boundaries, combination matching, cited public responses, and fail-closed election configuration.
-- [ ] Implement non-personalized ballot browsing by ZIP code, city, and county; label results as selectable area matches rather than exact voter matches. The API service, validation, synthetic fixtures, responsive web presentation, sourced ranking contract, and migration `012` are implemented. The pinned 76522 calculation was imported on 2026-08-20 as draft evidence: Coryell 38,975/41,123 (94.78%) and Lampasas 2,148/41,123 (5.22%). Review/promotion, city/county indexes, and real verified-ballot lookup remain.
+- [ ] Implement non-personalized ballot browsing by ZIP code, city, and county; label results as selectable area matches rather than exact voter matches. The API service, validation, synthetic fixtures, responsive web presentation, sourced ranking contract, migration `012`, fail-closed promotion command, and publication-scoped database reader are implemented. The pinned 76522 calculation was imported on 2026-08-20 as draft evidence: Coryell 38,975/41,123 (94.78%) and Lampasas 2,148/41,123 (5.22%). Operator promotion/enablement, city/county indexes, and real verified-ballot lookup remain.
 - [x] For unresolved addresses, return and display the evidence-backed plausible ballot set with geographic explanations, source citations, and no preselected winner. The comparison UI labels every choice as possible, explains the unresolved reason, and provides no selection control.
 - [x] Match resolved jurisdiction memberships to verified official ballot styles/versions. Ballot versions now carry an immutable, source-backed combination of geographic requirements; all requirements must match, and zero/multiple results never choose a winner.
 - [x] Create synthetic address and boundary-edge test fixtures; never use real voter data. Geocoder, boundary importer, exact-edge, overlap-conflict, and no-match cases use invented examples only.
+- [x] Add opt-in browser location resolution with a registered-home warning, request-only coordinates, accuracy-aware boundary ambiguity, and sanitized API validation.
+- [ ] Add search-as-you-type address suggestions only after a provider or self-hosted dataset passes privacy, license, cost, retention, and operational review. Native browser saved-address autofill remains enabled in the interim.
 - [ ] Add daily verification of current ballot versions during the active election period.
 
 ### Decision checkpoints

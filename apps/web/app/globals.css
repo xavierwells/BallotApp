@@ -19,6 +19,11 @@ button:disabled { cursor: wait; opacity: .7; }
 select { border: 1px solid #829ab1; border-radius: .4rem; background: white; color: var(--ink); font: inherit; padding: .9rem 2.2rem .9rem .8rem; }
 .browse-row input { flex: 1; }
 .privacy { color: #486581; font-size: .9rem; text-align: center; }
+.location-option { border-top: 1px solid #d9e2ec; margin-top: 1.25rem; padding-top: 1rem; text-align: center; }
+.location-option > span { color: #627d98; display: block; font-size: .85rem; margin: -.2rem 0 .75rem; text-transform: uppercase; }
+.location-button { background: white; border: 1px solid var(--blue); color: var(--blue); }
+.location-warning { color: #486581; font-size: .85rem; line-height: 1.45; margin: .7rem auto 0; max-width: 34rem; }
+.location-error { background: #fff5f5; border-left: 3px solid #c53030; color: #822727; margin: .8rem 0 0; padding: .7rem; text-align: left; }
 .notice { border-left: 4px solid var(--gold); margin-top: 1.5rem; padding: .8rem; background: #fff7df; text-align: left; }
 .error { border-color: #c53030; background: #fff5f5; }
 .results { max-width: 760px; margin: -2.5rem auto 4rem; padding: 0 1.5rem; }
@@ -31,6 +36,11 @@ select { border: 1px solid #829ab1; border-radius: .4rem; background: white; col
 .coverage-summary { background: #eef6fc; border-left: 3px solid var(--blue); color: #334e68; line-height: 1.45; margin: 1rem 0; padding: .9rem 1rem; }
 .coverage-summary > p { font-size: .9rem; margin-bottom: .4rem; }
 .coverage-summary .citation { margin-bottom: 0; }
+.area-match-list { display: grid; gap: 1rem; margin-bottom: 1.25rem; }
+.area-match-card { background: white; border: 1px solid #bcccdc; border-top: 4px solid var(--blue); padding: 1.25rem; }
+.area-match-card h3 { font: 700 1.55rem/1.2 Georgia, serif; margin: .35rem 0 .75rem; }
+.area-percentage { background: #eef6fc; border-left: 3px solid var(--blue); line-height: 1.5; padding: .8rem 1rem; }
+.no-ballot-notice { color: #486581; font-size: .88rem; font-weight: 700; margin-bottom: 0; }
 .result-label { color: var(--blue); font-size: .78rem; font-weight: 700; letter-spacing: .08em; margin: 0; text-transform: uppercase; }
 .ballot-card h2 { font: 700 1.7rem/1.2 Georgia, serif; margin: .35rem 0; }
 .ballot-card h3 { border-top: 1px solid #d9e2ec; margin-top: 1.5rem; padding-top: 1.25rem; }

@@ -21,7 +21,7 @@ def test_synthetic_browse_returns_multiple_unselected_area_matches() -> None:
     assert result.matches[0].most_common_area_match is True
     assert result.matches[0].estimated_area_share_percent == 95
     assert result.matches[0].coverage_basis == "residential_population_estimate"
-    assert result.matches[0].coverage_source is not None
+    assert result.matches[0].coverage_sources
     assert result.matches[1].most_common_area_match is False
     assert all("address-level match was not attempted" in match.geographic_support[0].explanation for match in result.matches)
     assert "76522" not in {str(match.ballot.ballot_version_id) for match in result.matches}

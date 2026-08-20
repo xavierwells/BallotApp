@@ -97,3 +97,18 @@ Validated pinned Census browse coverage calculation
 
 After review, rerun with `--apply`. This creates draft rows only and is
 idempotent. Promotion and public use remain a separate review step.
+
+After inspecting the imported counts, promote the exact pinned calculation:
+
+```powershell
+docker compose run --rm api python -m app.cli.review_browse_coverage `
+  --manifest /app/data/browse/copperas-cove-pilot.json `
+  --reviewer-reference YOUR-OPERATOR-ID
+```
+
+The command fails closed unless both expected county estimates have the exact
+numerators, denominator, ranks, methodology version, ZCTA response, population
+response, and evidence links. It is safe to rerun. To expose reviewed area
+matches through the API, set `BALLOT_BROWSE_DATABASE_ENABLED=true` and recreate
+the API and web containers. This enables only coarse browse reads; it does not
+enable or promote address resolution.

@@ -14,6 +14,7 @@ def test_openapi_contract_is_published() -> None:
     assert response.status_code == 200
     assert "/api/v1/ballots/resolve" in response.json()["paths"]
     assert "/api/v1/ballots/resolve-preview" in response.json()["paths"]
+    assert "/api/v1/ballots/resolve-location" in response.json()["paths"]
     assert response.json()["paths"]["/api/v1/ballots/resolve-preview"]["post"]["deprecated"] is True
     assert "/api/v1/ballots/browse" in response.json()["paths"]
     browse_operation = response.json()["paths"]["/api/v1/ballots/browse"]["get"]
@@ -54,6 +55,30 @@ def test_address_validation_does_not_echo_a_long_submitted_value() -> None:
     assert submitted_value not in response.text
 
 
+def test_location_resolution_does_not_echo_or_persist_coordinates() -> None:
+    response = client.post(
+        "/api/v1/ballots/resolve-location",
+        json={"longitude": -97.90321, "latitude": 31.12345, "accuracyMeters": 24.5},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["addressPersisted"] is False
+    assert "-97.90321" not in response.text
+    assert "31.12345" not in response.text
+    assert "24.5" not in response.text
+
+
+def test_location_validation_does_not_echo_invalid_coordinates() -> None:
+    response = client.post(
+        "/api/v1/ballots/resolve-location",
+        json={"longitude": 997.12345, "latitude": 31.12345, "accuracyMeters": 24.5},
+    )
+
+    assert response.status_code == 422
+    assert "997.12345" not in response.text
+    assert "31.12345" not in response.text
+
+
 def test_browse_contract_is_explicitly_not_an_exact_match() -> None:
     response = client.get(
         "/api/v1/ballots/browse",
@@ -69,6 +94,7 @@ def test_browse_contract_is_explicitly_not_an_exact_match() -> None:
         "demonstration": False,
         "message": "Ballot browsing is not connected yet. No exact voter match was attempted.",
         "matches": [],
+        "areaMatches": [],
     }
 
 
@@ -91,7 +117,7 @@ def test_browse_contract_rejects_an_invalid_zip_without_echoing_it() -> None:
     assert "private street text" not in response.text
 
 
-def test_available_browse_response_requires_a_ballot() -> None:
+def test_available_browse_response_requires_a_match() -> None:
     with pytest.raises(ValidationError, match="available browse responses require"):
         BallotBrowseResponse(
             status="available",

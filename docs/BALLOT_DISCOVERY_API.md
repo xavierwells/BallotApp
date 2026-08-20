@@ -58,6 +58,13 @@ belongs to the user. Alternatives remain visible. Land-area estimates are
 supported for provenance but should not drive a “most common” label when a
 residential estimate is available.
 
+Before official ballot versions are connected, an available response may carry
+`areaMatches` instead of ballot `matches`. Each area match identifies the
+reviewed county or other civic area, rank, percentage, calculation basis, and
+all coverage-source citations. The message explicitly states that no ballot
+was selected. Database-backed browse reads are publication-scoped and require
+the operator to enable `BALLOT_BROWSE_DATABASE_ENABLED` after promotion.
+
 ## Evidence carried by a ballot choice
 
 Each ballot choice identifies an immutable ballot version, election name/date,

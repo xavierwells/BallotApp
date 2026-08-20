@@ -58,7 +58,7 @@ class BoundaryResolution:
 
 class BoundaryRepository(Protocol):
     def memberships_at(
-        self, *, longitude: float, latitude: float, effective_on: date
+        self, *, longitude: float, latitude: float, effective_on: date, uncertainty_meters: float = 0
     ) -> tuple[BoundaryMembership, ...]: ...
 
 
@@ -69,7 +69,7 @@ class PostgisBoundaryRepository:
         self.engine = engine
 
     def memberships_at(
-        self, *, longitude: float, latitude: float, effective_on: date
+        self, *, longitude: float, latitude: float, effective_on: date, uncertainty_meters: float = 0
     ) -> tuple[BoundaryMembership, ...]:
         point_sql = "ST_SetSRID(ST_Point(:longitude, :latitude), 4326)"
         with self.engine.connect() as connection:
@@ -79,7 +79,9 @@ class PostgisBoundaryRepository:
                     "bv.authority_id, ga.area_type, ga.name AS area_name, "
                     "subject.name AS authority_name, bd.source_url, bd.checked_at AS source_checked_at, "
                     "publisher.name || ' boundary dataset' AS source_label, "
-                    f"ST_Touches(bv.boundary, {point_sql}) AS on_boundary_edge "
+                    f"(ST_Touches(bv.boundary, {point_sql}) OR ST_DWithin("
+                    f"ST_Boundary(bv.boundary)::geography, {point_sql}::geography, :uncertainty_meters"
+                    ")) AS on_boundary_edge "
                     "FROM boundary_versions bv "
                     "JOIN geographic_areas ga ON ga.id = bv.geographic_area_id "
                     "AND ga.authority_id = bv.authority_id "
@@ -97,6 +99,7 @@ class PostgisBoundaryRepository:
                     "longitude": longitude,
                     "latitude": latitude,
                     "effective_on": effective_on,
+                    "uncertainty_meters": uncertainty_meters,
                 },
             ).mappings()
             return tuple(BoundaryMembership(**row) for row in rows)
@@ -107,13 +110,16 @@ class BoundaryResolver:
         self.repository = repository
 
     def resolve(
-        self, *, longitude: float, latitude: float, effective_on: date
+        self, *, longitude: float, latitude: float, effective_on: date, uncertainty_meters: float = 0
     ) -> BoundaryResolution:
         _validate_coordinates(longitude=longitude, latitude=latitude)
+        if not 0 <= uncertainty_meters <= 10_000:
+            raise ValueError("coordinate uncertainty must be between 0 and 10000 meters")
         memberships = self.repository.memberships_at(
             longitude=longitude,
             latitude=latitude,
             effective_on=effective_on,
+            uncertainty_meters=uncertainty_meters,
         )
         if not memberships:
             return BoundaryResolution(

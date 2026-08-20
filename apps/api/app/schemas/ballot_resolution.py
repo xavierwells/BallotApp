@@ -152,7 +152,19 @@ class BrowseBallotMatch(PublicModel):
     rank: int = Field(ge=1)
     estimated_area_share_percent: float | None = Field(default=None, ge=0, le=100)
     coverage_basis: CoverageBasis = CoverageBasis.UNAVAILABLE
-    coverage_source: SourceCitation | None = None
+    coverage_sources: list[SourceCitation] = Field(default_factory=list)
+    most_common_area_match: bool = False
+    explanation: str = Field(min_length=1, max_length=2000)
+
+
+class BrowseGeographicMatch(PublicModel):
+    geographic_area_id: UUID
+    name: str = Field(min_length=1, max_length=255)
+    area_type: str = Field(min_length=1, max_length=40)
+    rank: int = Field(ge=1)
+    estimated_area_share_percent: float = Field(ge=0, le=100)
+    coverage_basis: CoverageBasis
+    coverage_sources: list[SourceCitation] = Field(min_length=1)
     most_common_area_match: bool = False
     explanation: str = Field(min_length=1, max_length=2000)
 
@@ -165,20 +177,21 @@ class BallotBrowseResponse(PublicModel):
     demonstration: bool = False
     message: str = Field(min_length=1, max_length=2000)
     matches: list[BrowseBallotMatch] = Field(default_factory=list)
+    area_matches: list[BrowseGeographicMatch] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def available_requires_matches(self) -> "BallotBrowseResponse":
-        if self.status == "available" and not self.matches:
-            raise ValueError("available browse responses require at least one ballot")
-        if self.status != "available" and self.matches:
-            raise ValueError("only available browse responses may contain ballots")
+        if self.status == "available" and not (self.matches or self.area_matches):
+            raise ValueError("available browse responses require at least one area or ballot match")
+        if self.status != "available" and (self.matches or self.area_matches):
+            raise ValueError("only available browse responses may contain matches")
         if self.matches:
             ranks = [match.rank for match in self.matches]
             if ranks != list(range(1, len(self.matches) + 1)):
                 raise ValueError("browse matches must be ordered with consecutive ranks")
             for match in self.matches:
                 has_estimate = match.estimated_area_share_percent is not None
-                has_provenance = match.coverage_basis is not CoverageBasis.UNAVAILABLE and match.coverage_source is not None
+                has_provenance = match.coverage_basis is not CoverageBasis.UNAVAILABLE and bool(match.coverage_sources)
                 if has_estimate != has_provenance:
                     raise ValueError("browse coverage estimates require a calculation basis and source")
             if all(match.estimated_area_share_percent is not None for match in self.matches):
@@ -192,7 +205,21 @@ class BallotBrowseResponse(PublicModel):
                 common[0].rank != 1
                 or common[0].estimated_area_share_percent is None
                 or common[0].coverage_basis is CoverageBasis.UNAVAILABLE
-                or common[0].coverage_source is None
+                or not common[0].coverage_sources
             ):
                 raise ValueError("a most-common area match requires a sourced estimate at rank one")
+        if self.area_matches:
+            ranks = [match.rank for match in self.area_matches]
+            if ranks != list(range(1, len(self.area_matches) + 1)):
+                raise ValueError("browse area matches must be ordered with consecutive ranks")
+            estimates = [match.estimated_area_share_percent for match in self.area_matches]
+            if estimates != sorted(estimates, reverse=True):
+                raise ValueError("browse area matches must be ranked by descending share")
+            if any(not match.coverage_sources for match in self.area_matches):
+                raise ValueError("browse area matches require coverage source evidence")
+            if any(match.coverage_basis is CoverageBasis.UNAVAILABLE for match in self.area_matches):
+                raise ValueError("browse area matches require a calculation basis")
+            common = [match for match in self.area_matches if match.most_common_area_match]
+            if len(common) > 1 or (common and common[0].rank != 1):
+                raise ValueError("only the first browse area match may be labeled most common")
         return self

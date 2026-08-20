@@ -17,12 +17,12 @@ AUTHORITY_ID = UUID("00000000-0000-0000-0000-000000000001")
 class FakeBoundaryRepository:
     def __init__(self, memberships: tuple[BoundaryMembership, ...]) -> None:
         self.memberships = memberships
-        self.received: tuple[float, float, date] | None = None
+        self.received: tuple[float, float, date, float] | None = None
 
     def memberships_at(
-        self, *, longitude: float, latitude: float, effective_on: date
+        self, *, longitude: float, latitude: float, effective_on: date, uncertainty_meters: float = 0
     ) -> tuple[BoundaryMembership, ...]:
-        self.received = longitude, latitude, effective_on
+        self.received = longitude, latitude, effective_on, uncertainty_meters
         return self.memberships
 
 
@@ -53,7 +53,7 @@ def test_returns_request_scoped_verified_memberships_without_coordinates() -> No
 
     assert result.status is BoundaryResolutionStatus.MATCHED
     assert result.reasons == ()
-    assert repository.received == (-97.90, 31.11, date(2026, 11, 3))
+    assert repository.received == (-97.90, 31.11, date(2026, 11, 3), 0)
     assert not hasattr(result, "longitude")
     assert not hasattr(result, "latitude")
 

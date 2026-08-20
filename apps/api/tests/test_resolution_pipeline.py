@@ -33,8 +33,10 @@ class FakeGeocoder:
 class FakeBoundaryResolver:
     def __init__(self, result: BoundaryResolution) -> None:
         self.result = result
+        self.arguments: dict[str, object] = {}
 
-    def resolve(self, **_arguments: object) -> BoundaryResolution:
+    def resolve(self, **arguments: object) -> BoundaryResolution:
+        self.arguments = arguments
         return self.result
 
 
@@ -143,6 +145,27 @@ def test_unmatched_geocode_returns_without_spatial_request_data() -> None:
     assert result.status == "not_found"
     assert result.address_persisted is False
     assert SYNTHETIC_ADDRESS not in repr(result)
+
+
+def test_location_resolution_uses_accuracy_without_returning_coordinates() -> None:
+    boundary_resolver = FakeBoundaryResolver(
+        BoundaryResolution(BoundaryResolutionStatus.MATCHED, (membership(AREA_1, 1),), ())
+    )
+    subject = ResolutionPipeline(
+        context=ResolutionContext(PUBLICATION_ID, ELECTION_ID, date(2026, 11, 3)),
+        geocoder=FakeGeocoder(),
+        boundary_resolver=boundary_resolver,  # type: ignore[arg-type]
+        ballot_matcher=FakeBallotMatcher(BallotMatch(BallotMatchStatus.MATCHED, (BALLOT_1,))),  # type: ignore[arg-type]
+        ballot_catalog=FakeCatalog((BALLOT_1,)),
+    )
+
+    result = subject.resolve_location(longitude=-97.81234, latitude=31.11223, accuracy_meters=18.5)
+
+    assert result.status == "resolved"
+    assert boundary_resolver.arguments["uncertainty_meters"] == 18.5
+    assert "-97.81234" not in repr(result)
+    assert "31.11223" not in repr(result)
+    assert "18.5" not in repr(result)
 
 
 def test_invalid_election_configuration_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
