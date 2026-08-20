@@ -21,9 +21,13 @@ Ephemeral address
 
 Geocoding and jurisdiction resolution have distinct responsibilities:
 
-- A **geocoder adapter** converts an address to coordinates. Before adoption, the provider's terms, license, privacy/retention behavior, availability, and rate limits must be recorded in the approval ledger. The Census Geocoder is a candidate for evaluation, not an approved dependency.
+- A **geocoder adapter** converts an address to coordinates. The Census Geocoder is approved for opt-in, ephemeral, server-side pilot use under the controls in [`GEOCODER_APPROVAL.md`](GEOCODER_APPROVAL.md). It is disabled by default and is not evidence of ballot assignment by itself.
 - The **jurisdiction resolver** is owned by the platform. It runs point-in-polygon checks against versioned official precinct, county, school-district, legislative, and special-district boundaries stored in PostGIS.
 - The **ballot matcher** selects a verified official ballot style/version. Geographic matching alone is never sufficient evidence of the final ballot.
+- A ballot style is defined by a verified **combination** of required geographic
+  areas, not by one hard-coded precinct field. Every requirement must be in the
+  resolved membership set; unrelated extra memberships are allowed. Zero or
+  multiple matching published ballot versions are explicit non-results.
 
 ## Confidence and ambiguity rules
 
@@ -35,6 +39,13 @@ Every resolution must carry `resolutionStatus`, `confidence`, `boundaryVersionId
 | Point on/near a jurisdiction boundary | Mark `ambiguous`; evaluate all applicable boundary versions. Return the plausible ballot choices with plain-language descriptions of the geography that makes each one applicable. Do not label either choice as the voter's resolved ballot. |
 | Authoritative boundaries disagree | Mark `source_conflict`; retain both source versions and show the ballots supported by each source with their citations and an explicit conflict warning. |
 | Verified ballot style matches | Return `resolved` with the ballot version and its source evidence. |
+
+The initial self-owned resolver implements exact PostGIS `ST_Covers` checks
+against active areas and verified boundary versions effective on the election
+date. An exact geometric edge is `ambiguous`; overlapping interiors for the
+same authority and area type are a `source_conflict`. A configurable
+"near-boundary" distance is deliberately not guessed and remains a later
+product/operational decision.
 
 Because the platform does not retain addresses, `needs_review` cannot create a queue containing a raw address. The user receives a clear uncertainty response and official election-authority contact path. A future opt-in support workflow would require a separate privacy review before accepting any address.
 

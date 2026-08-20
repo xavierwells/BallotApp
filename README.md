@@ -26,6 +26,8 @@ Read [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for bare-metal and Rancher/Kuber
 The staged product plan and current implementation priority are in [`docs/PRODUCT_DELIVERY_BACKLOG.md`](docs/PRODUCT_DELIVERY_BACKLOG.md).
 Plain-language definitions for civic, election, editorial, data, and software terminology are in [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 Address-resolution and ZIP/city/county browsing responses are defined in [`docs/BALLOT_DISCOVERY_API.md`](docs/BALLOT_DISCOVERY_API.md).
+The optional server-side Census geocoder and its privacy controls are recorded in [`docs/GEOCODER_APPROVAL.md`](docs/GEOCODER_APPROVAL.md).
+The official-geometry inventory and import holds are recorded in [`docs/BOUNDARY_SOURCE_REVIEW.md`](docs/BOUNDARY_SOURCE_REVIEW.md).
 Quality gates and operational standards are in [`docs/CI_QUALITY_GATES.md`](docs/CI_QUALITY_GATES.md), [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md), and [`docs/ACCESSIBILITY.md`](docs/ACCESSIBILITY.md).
 
 ## Non-negotiable rules

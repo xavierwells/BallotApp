@@ -1,6 +1,7 @@
 import os
+from datetime import date
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from alembic import command
 from alembic.config import Config
@@ -8,6 +9,16 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import DatabaseError
 
+from app.ballot_matching import (
+    BallotMatcher,
+    BallotMatchStatus,
+    PostgresBallotRequirementRepository,
+)
+from app.boundary_resolution import (
+    BoundaryResolutionStatus,
+    BoundaryResolver,
+    PostgisBoundaryRepository,
+)
 from app.database import sqlalchemy_database_url
 
 
@@ -41,7 +52,8 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'offices', 'races', 'candidates', 'propositions', "
                     "'election_authorities', 'authority_source_registry', "
                     "'verification_cadence_policies', 'source_verification_checks', 'source_alerts', "
-                    "'geographic_areas', 'boundary_datasets', 'boundary_versions')"
+                    "'geographic_areas', 'boundary_datasets', 'boundary_versions', "
+                    "'ballot_geographic_requirements')"
                 )
             )
         }
@@ -69,7 +81,9 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'source_registry_schedule_after_check', "
                     "'source_alerts_open_after_source_check', "
                     "'boundary_datasets_final_immutable', "
-                    "'boundary_versions_verified_immutable')"
+                    "'boundary_versions_verified_immutable', "
+                    "'ballot_area_requirements_final_immutable', "
+                    "'ballot_versions_require_geography')"
                 )
             )
         }
@@ -103,9 +117,9 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
             )
         ).mappings().one()
 
-    assert len(tables) == 20
+    assert len(tables) == 21
     assert {"draft", "verified", "published", "retracted", "superseded"} <= claim_statuses
-    assert len(trigger_names) == 11
+    assert len(trigger_names) == 13
     assert postgis_version
     assert boundary_geometry == {"type": "MULTIPOLYGON", "srid": 4326}
     assert document_columns == {"artifact_retention", "public_access_level", "content_length_bytes"}
@@ -146,6 +160,7 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                 "slug": f"test-publication-{test_suffix}",
             },
         )
+
         connection.execute(
             text(
                 "INSERT INTO election_authorities "
@@ -194,9 +209,11 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
         connection.execute(
             text(
                 "INSERT INTO boundary_datasets "
-                "(id, authority_id, authority_source_registry_id, source_url, checked_at, status, "
+                "(id, publisher_authority_id, subject_authority_id, authority_source_registry_id, "
+                "source_url, checked_at, status, "
                 "reviewer_reference, reviewed_at) "
-                "VALUES (:id, :authority_id, :registry_id, 'https://example.test/boundaries', "
+                "VALUES (:id, :authority_id, :authority_id, :registry_id, "
+                "'https://example.test/boundaries', "
                 "CURRENT_TIMESTAMP, 'imported', 'synthetic-test', CURRENT_TIMESTAMP)"
             ),
             {
@@ -205,6 +222,7 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                 "registry_id": registry_entry_id,
             },
         )
+
         connection.execute(
             text(
                 "INSERT INTO boundary_versions "
@@ -232,6 +250,123 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
         ).scalar_one()
 
     assert contains_synthetic_point is True
+
+    resolver = BoundaryResolver(PostgisBoundaryRepository(engine))
+    interior_resolution = resolver.resolve(
+        longitude=-97.90,
+        latitude=31.11,
+        effective_on=date(2026, 11, 3),
+    )
+    edge_resolution = resolver.resolve(
+        longitude=-97.91,
+        latitude=31.10,
+        effective_on=date(2026, 11, 3),
+    )
+    assert interior_resolution.status is BoundaryResolutionStatus.MATCHED
+    assert interior_resolution.memberships[0].boundary_version_id == UUID(boundary_version_id)
+    assert edge_resolution.status is BoundaryResolutionStatus.AMBIGUOUS
+
+    election_id = str(uuid4())
+    ballot_version_id = str(uuid4())
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO elections "
+                "(id, publication_id, authority_name, jurisdiction_name, election_date, "
+                "election_type, official_document_id) "
+                "VALUES (:id, :publication_id, 'Test County', 'Synthetic Jurisdiction', "
+                "DATE '2026-11-03', 'general', :document_id)"
+            ),
+            {
+                "id": election_id,
+                "publication_id": publication_id,
+                "document_id": document_id,
+            },
+        )
+        connection.execute(
+            text(
+                "INSERT INTO ballot_versions "
+                "(id, publication_id, election_id, official_document_id, external_identifier, "
+                "status, retrieved_at) "
+                "VALUES (:id, :publication_id, :election_id, :document_id, 'synthetic-style', "
+                "'draft', CURRENT_TIMESTAMP)"
+            ),
+            {
+                "id": ballot_version_id,
+                "publication_id": publication_id,
+                "election_id": election_id,
+                "document_id": document_id,
+            },
+        )
+        connection.execute(
+            text(
+                "INSERT INTO ballot_geographic_requirements "
+                "(ballot_version_id, publication_id, geographic_area_id, authority_id, "
+                "source_document_id, verified_by_reference, verified_at) "
+                "VALUES (:ballot_id, :publication_id, :area_id, :authority_id, "
+                ":document_id, 'synthetic-test', CURRENT_TIMESTAMP)"
+            ),
+            {
+                "ballot_id": ballot_version_id,
+                "publication_id": publication_id,
+                "area_id": geographic_area_id,
+                "authority_id": authority_id,
+                "document_id": document_id,
+            },
+        )
+        connection.execute(
+            text(
+                "UPDATE ballot_versions SET status = 'published', published_at = CURRENT_TIMESTAMP "
+                "WHERE id = :id"
+            ),
+            {"id": ballot_version_id},
+        )
+
+    ballot_match = BallotMatcher(PostgresBallotRequirementRepository(engine)).match(
+        publication_id=UUID(publication_id),
+        election_id=UUID(election_id),
+        effective_on=date(2026, 11, 3),
+        geographic_area_ids=frozenset({UUID(geographic_area_id)}),
+    )
+    assert ballot_match.status is BallotMatchStatus.MATCHED
+    assert ballot_match.ballot_version_ids == (UUID(ballot_version_id),)
+
+    unmapped_ballot_id = str(uuid4())
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO ballot_versions "
+                "(id, publication_id, election_id, official_document_id, external_identifier, "
+                "status, retrieved_at) VALUES (:id, :publication_id, :election_id, :document_id, "
+                "'synthetic-unmapped-style', 'draft', CURRENT_TIMESTAMP)"
+            ),
+            {
+                "id": unmapped_ballot_id,
+                "publication_id": publication_id,
+                "election_id": election_id,
+                "document_id": document_id,
+            },
+        )
+
+    with pytest.raises(DatabaseError, match="must have geographic requirements"):
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE ballot_versions SET status = 'published', published_at = CURRENT_TIMESTAMP "
+                    "WHERE id = :id"
+                ),
+                {"id": unmapped_ballot_id},
+            )
+
+    with pytest.raises(DatabaseError, match="published ballot geographic requirements are immutable"):
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "DELETE FROM ballot_geographic_requirements "
+                    "WHERE ballot_version_id = :ballot_id"
+                ),
+                {"ballot_id": ballot_version_id},
+            )
 
     with pytest.raises(DatabaseError, match="verified boundary versions are immutable"):
         with engine.begin() as connection:
@@ -267,6 +402,26 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                 "slug": f"other-county-{test_suffix}",
             },
         )
+
+    with engine.begin() as connection:
+        cross_publisher_dataset = connection.execute(
+            text(
+                "INSERT INTO boundary_datasets "
+                "(id, publisher_authority_id, subject_authority_id, authority_source_registry_id, "
+                "source_url, checked_at, status) "
+                "VALUES (gen_random_uuid(), :publisher_id, :subject_id, :registry_id, "
+                "'https://example.test/state-published-county-boundary', CURRENT_TIMESTAMP, 'registered') "
+                "RETURNING publisher_authority_id, subject_authority_id"
+            ),
+            {
+                "publisher_id": authority_id,
+                "subject_id": second_authority_id,
+                "registry_id": registry_entry_id,
+            },
+        ).mappings().one()
+
+    assert str(cross_publisher_dataset["publisher_authority_id"]) == authority_id
+    assert str(cross_publisher_dataset["subject_authority_id"]) == second_authority_id
 
     with pytest.raises(DatabaseError, match="fk_documents_registry_authority"):
         with engine.begin() as connection:

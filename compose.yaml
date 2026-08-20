@@ -24,6 +24,8 @@ services:
       DOCUMENT_STORAGE_BACKEND: ${DOCUMENT_STORAGE_BACKEND:-filesystem}
       DOCUMENT_STORAGE_ROOT: ${DOCUMENT_STORAGE_ROOT:-/var/lib/ballot/documents}
       AUTHORITY_MANIFEST_PATH: /app/data/authorities/copperas-cove-pilot.json
+      GEOCODER_PROVIDER: ${GEOCODER_PROVIDER:-disabled}
+      GEOCODER_TIMEOUT_SECONDS: ${GEOCODER_TIMEOUT_SECONDS:-5}
     ports:
       - "${API_PORT:-8080}:8080"
     volumes:

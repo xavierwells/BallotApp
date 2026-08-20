@@ -1,9 +1,11 @@
 # Epic 3 boundary foundations
 
-Migration `009_boundary_foundations` supplies the storage layer for official,
+Migrations `009_boundary_foundations` and `010_boundary_source_roles` supply the storage layer for official,
 versioned geographic boundaries. It does **not** approve a geocoder, import a
 real boundary dataset, or decide how an ambiguous location maps to a ballot.
 Those remain separate Epic 3 decisions.
+
+The controlled draft importer is documented in [BOUNDARY_IMPORT.md](BOUNDARY_IMPORT.md).
 
 ## What is now represented
 
@@ -19,13 +21,18 @@ election authority
   map shapes. Adding a newly evidenced district creates a row; it does not
   require a hard-coded pilot district list.
 - `boundary_datasets` records the exact registered source URL, date checked,
-  review decision, reviewer, and authority that supplied a future import.
+  review decision, reviewer, publisher authority, and subject authority. The
+  two authorities may differ when a state body publishes county geometry.
 - `boundary_versions` stores normalized `MultiPolygon` geometry in WGS 84
   (`SRID 4326`), its SHA-256 checksum, effective period, review evidence, and
   optional predecessor.
-- Composite foreign keys require an area, dataset, and boundary version to
-  belong to the same authority. The authority belongs to a publication, which
-  preserves the existing tenant boundary.
+- `ballot_geographic_requirements` records the source-backed combination of
+  areas required for a ballot version. Requirements become immutable when the
+  ballot is published.
+- Composite foreign keys require an area and boundary version to belong to the
+  dataset's subject authority, while separately requiring the source registry
+  entry to belong to the dataset's publisher. Both authorities remain inside
+  the same publication boundary.
 - A GiST spatial index supports future point-in-polygon queries.
 - Imported/rejected dataset reviews and verified/superseded/retired boundary
   versions are immutable. Corrections require a replacement dataset or a
@@ -68,7 +75,7 @@ docker build --target test --tag ballot-api-test apps/api
 docker run --rm ballot-api-test
 ```
 
-Expected migration revision: `009_boundary_foundations`. If custom
+Expected migration revision: `011_ballot_area_requirements`. If custom
 `POSTGRES_USER` or `POSTGRES_DB` values are set in `.env`, use those in the two
 `psql` commands. Tests use the Dockerfile's dedicated `test` target because the
 security-hardened production API image intentionally contains neither Pytest

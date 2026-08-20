@@ -131,20 +131,20 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ### Tasks
 
-- [ ] Evaluate and approve a geocoder adapter; verify address retention, cost, rate limits, and terms.
+- [x] Evaluate and approve a geocoder adapter; verify address retention, cost, rate limits, and terms. The Census adapter is approved for opt-in, ephemeral server-side pilot use and remains disabled by default; see `GEOCODER_APPROVAL.md`.
 - [x] Add PostGIS and migration support for versioned geometries. Migration `009_boundary_foundations` and PostGIS 3.6 were verified in Compose on 2026-08-20.
-- [ ] Import official county, precinct, municipal, school-district, legislative, and special-district boundaries.
-- [ ] Implement self-owned point-in-polygon jurisdiction resolution.
+- [ ] Import official county, precinct, municipal, school-district, legislative, and special-district boundaries. A checksum-pinned, retained-artifact, draft-only Shapefile importer and publisher/subject provenance split are implemented; real pilot imports remain held for exact source metadata and local-authority confirmation.
+- [x] Implement self-owned point-in-polygon jurisdiction resolution. The request-scoped PostGIS resolver uses only active areas and effective verified boundary versions, detects exact edges and overlapping-source conflicts, and returns no coordinates; ballot-style mapping remains separate.
 - [ ] Define and implement confidence, ambiguity, source-conflict, and not-found result models. Public API schemas, reason codes, validation, and Swagger routes are implemented; resolver behavior awaits geocoder/boundary integration.
 - [ ] Implement non-personalized ballot browsing by ZIP code, city, and county; label results as selectable area matches rather than exact voter matches. API contract is implemented; data lookup and web presentation remain.
 - [ ] For unresolved addresses, return and display the evidence-backed plausible ballot set with geographic explanations, source citations, and no preselected winner. Validated API response model is implemented; resolver and web presentation remain.
-- [ ] Match resolved jurisdiction memberships to verified official ballot styles/versions.
-- [ ] Create synthetic address and boundary-edge test fixtures; never use real voter data.
+- [x] Match resolved jurisdiction memberships to verified official ballot styles/versions. Ballot versions now carry an immutable, source-backed combination of geographic requirements; all requirements must match, and zero/multiple results never choose a winner.
+- [x] Create synthetic address and boundary-edge test fixtures; never use real voter data. Geocoder, boundary importer, exact-edge, overlap-conflict, and no-match cases use invented examples only.
 - [ ] Add daily verification of current ballot versions during the active election period.
 
 ### Decision checkpoints
 
-- [ ] Hold a boundary-source go/no-go review before importing non-authoritative, incomplete, or conflicting geometry data.
+- [x] Hold a boundary-source go/no-go review before importing non-authoritative, incomplete, or conflicting geometry data. Inventory and holds are recorded in `BOUNDARY_SOURCE_REVIEW.md`; private reference imports are approved, while authoritative resolver use still requires authority confirmation.
 - [ ] Decide whether unresolved results may emit a privacy-preserving coarse-area signal. If so, specify granularity, aggregation threshold, retention, access controls, and a prohibition on raw address or coordinate retention.
 
 ### Exit criteria
@@ -285,4 +285,4 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ## Priority now
 
-Epics 0–2 are complete for the direct-link/manual-check initial-launch policy. **Epic 3 is active**: its PostGIS/versioned-boundary foundation is verified; geocoder and real boundary-source approvals remain open.
+Epics 0–2 are complete for the direct-link/manual-check initial-launch policy. **Epic 3 is active**: its PostGIS/versioned-boundary foundation, optional ephemeral geocoder, controlled draft importer, and self-owned jurisdiction resolver are implemented; real boundary imports and ballot-style membership remain open.

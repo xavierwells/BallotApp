@@ -8,11 +8,14 @@ Only the components listed below are approved for the initial scaffold. This is 
 | Alembic | PostgreSQL schema migrations | MIT | [PyPI project metadata](https://pypi.org/project/alembic/) |
 | SQLAlchemy | database access and schema metadata | MIT | [PyPI project metadata](https://pypi.org/project/SQLAlchemy/) |
 | pg8000 | pure-Python PostgreSQL driver | BSD-3-Clause | [PyPI project metadata](https://pypi.org/project/pg8000/) |
+| PyShp | Read retained ESRI Shapefile boundary datasets without native geospatial libraries | MIT | [upstream project and license](https://github.com/GeospatialPython/pyshp) |
 | Next.js | web framework | MIT | [upstream package metadata](https://github.com/vercel/next.js/blob/canary/packages/next/package.json) |
 | React | UI runtime | MIT | upstream project license |
 | PostgreSQL | relational database | PostgreSQL License | [official license](https://www.postgresql.org/about/licence/) |
 | PostGIS | Spatial types, indexes, and geographic queries in PostgreSQL | GPL-2.0-or-later | [official license FAQ](https://postgis.net/documentation/faq/gpl-license/); the application communicates with PostGIS as a database service and does not incorporate or modify its code |
 | Docker PostGIS image | PostgreSQL 18 + PostGIS 3.6 development/runtime image | MIT (image packaging); bundled components retain their own licenses | [upstream image repository](https://github.com/postgis/docker-postgis) |
+| U.S. Census Geocoding Services API | Optional server-side conversion of an ephemeral U.S. address to a temporary coordinate | U.S. government service under custom API terms | [approval record](docs/GEOCODER_APPROVAL.md); disabled by default, address disclosure required, no BallotApp retention |
+| Texas Legislative Council boundary datasets | Reference precinct, school-district, and enacted legislative-plan geometry | Creative Commons Attribution as identified on each selected dataset | [Capitol Data Portal](https://data.capitol.texas.gov/); private source retention and transformation approved with attribution, checksums, version pinning, and local-authority confirmation before authoritative use |
 | Valkey | optional cache and future queue broker | BSD-3-Clause | [upstream project](https://github.com/valkey-io/valkey) |
 | Uvicorn | ASGI server | BSD-3-Clause | upstream project license |
 | Pytest | test runner | MIT | upstream project license |

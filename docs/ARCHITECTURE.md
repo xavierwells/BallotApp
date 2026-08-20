@@ -23,7 +23,13 @@ Swagger UI and OpenAPI are generated directly by the API service. The OpenAPI co
 
 An organization/publication is a tenant boundary; a city is a civic jurisdiction. A single publication can cover multiple cities, and a city can span several election authorities. Tenant fields will be introduced before editorial data exists, but a Copperas Cove deployment can operate with one organization.
 
-The same OCI images run under Compose on a single host or under any conforming Kubernetes distribution, including Rancher-managed clusters and DigitalOcean Kubernetes. Self-hosted installations receive their own database; the hosted offering will use tenant-scoped data and database row-level security.
+The same OCI images run under Compose on a single host or under any conforming Kubernetes distribution, including Rancher-managed clusters and DigitalOcean Kubernetes. A self-hosted installation runs the same stack with its own database and normally one tenant. The hosted installation keeps records tenant-scoped in the shared schema.
+
+Tenant awareness in the schema is deliberate; tenant-management infrastructure
+is not. Provisioning, billing, tenant routing, separate schemas/databases,
+cross-tenant administration, and database row-level security are deferred until
+a second real tenant creates a concrete requirement. See the mandatory
+simplicity rule in [`GUARDRAILS.md`](GUARDRAILS.md).
 
 ## Address-resolution boundary
 

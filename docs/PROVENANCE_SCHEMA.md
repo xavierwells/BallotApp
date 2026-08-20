@@ -66,8 +66,9 @@ verification_events
 | `election_authorities` | Bodies that administer or authoritatively publish election records | publication, stable slug, type, official website, lifecycle status |
 | `authority_source_registry` | External source endpoints and their approval state | authority, direct URL, terms/license, monitoring class/method approval, reviewer/date |
 | `geographic_areas` | Stable civic-area identities independent of changing map shapes | authority, type, external identifier, lifecycle status |
-| `boundary_datasets` | Reviewed registrations of future official geometry imports | source registry, direct URL, checked/effective dates, status, reviewer/date |
+| `boundary_datasets` | Reviewed registrations of future official geometry imports | publisher authority, subject authority, source registry, direct URL, checked/effective dates, status, reviewer/date |
 | `boundary_versions` | Time-bounded PostGIS geometry for one civic area | dataset, effective dates, geometry checksum, verification, predecessor |
+| `ballot_geographic_requirements` | Verified combination of civic areas required by an official ballot style | ballot version, publication, area/authority, source document, verifier/date |
 | `verification_cadence_policies` | Adjustable source-review timing at organization, publication, or authority scope | scope, stage intervals, updater, timestamps |
 | `source_verification_checks` | Immutable record of a source re-check and its next due time | source, outcome, checker, checked/next-check times; current schedule is updated only by a non-older check |
 | `source_alerts` | Open or resolved stale-source and investigation work | source, alert type, resolution, check linkage, timestamps |
