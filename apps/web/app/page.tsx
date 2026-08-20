@@ -9,7 +9,16 @@ type PlausibleBallot = { ballot: Ballot; supportedBy: Support[]; explanation: st
 type Resolution = {
   status: string; message?: string; confidence?: number; addressPersisted: false;
   demonstration: boolean; reasonCodes: string[]; ballot?: Ballot; supportedBy?: Support[];
-  plausibleBallots?: PlausibleBallot[];
+  plausibleBallots?: PlausibleBallot[]; officialContactLinks?: string[];
+};
+
+const reasonLabels: Record<string, string> = {
+  low_geocode_confidence: "The address match was not precise enough.",
+  no_boundary_match: "No verified boundary covered the resolved location.",
+  near_boundary: "The location is on or very close to a boundary.",
+  boundary_source_conflict: "Official boundary sources disagree.",
+  ballot_style_conflict: "More than one official ballot style matches the available geography.",
+  ballot_data_unavailable: "Required official ballot data is not available yet.",
 };
 
 function CitationView({ citation, demo }: { citation: Citation; demo: boolean }) {
@@ -22,16 +31,23 @@ function CitationView({ citation, demo }: { citation: Citation; demo: boolean })
   );
 }
 
-function BallotCard({ ballot, support, demo }: { ballot: Ballot; support: Support[]; demo: boolean }) {
+function BallotCard({ ballot, support, demo, variant = "resolved", explanation, position, total }: {
+  ballot: Ballot; support: Support[]; demo: boolean; variant?: "resolved" | "plausible";
+  explanation?: string; position?: number; total?: number;
+}) {
+  const plausible = variant === "plausible";
   return (
-    <article className="ballot-card">
-      <p className="result-label">Resolved ballot</p>
+    <article className={`ballot-card${plausible ? " plausible-ballot" : ""}`}>
+      <p className="result-label">
+        {plausible ? `Possible ballot ${position} of ${total}` : "Resolved ballot"}
+      </p>
       <h2>{ballot.label}</h2>
       <p className="election-meta">
         {ballot.electionName} · {new Date(`${ballot.electionDate}T00:00:00Z`).toLocaleDateString("en-US", { dateStyle: "long", timeZone: "UTC" })}
       </p>
       <CitationView citation={ballot.officialSource} demo={demo} />
-      <h3>Why this ballot matched</h3>
+      {plausible && explanation && <p className="possibility-explanation">{explanation}</p>}
+      <h3>{plausible ? "Geography supporting this possibility" : "Why this ballot matched"}</h3>
       <ul className="support-list">
         {support.map((item) => (
           <li key={item.boundaryVersionId}>
@@ -43,6 +59,37 @@ function BallotCard({ ballot, support, demo }: { ballot: Ballot; support: Suppor
         ))}
       </ul>
     </article>
+  );
+}
+
+function UnresolvedComparison({ resolution }: { resolution: Resolution }) {
+  const ballots = resolution.plausibleBallots ?? [];
+  return (
+    <div className="comparison" aria-labelledby="comparison-title">
+      <header className="comparison-header">
+        <p className="result-label">Not an exact match</p>
+        <h2 id="comparison-title">More than one ballot may apply</h2>
+        <p>{resolution.message}</p>
+        <p className="comparison-warning"><strong>We have not selected a ballot for you.</strong>{" "}
+          Compare the geographic evidence below or confirm your ballot with an election official.</p>
+        {resolution.confidence !== undefined && <p className="confidence">Resolution confidence: {resolution.confidence}%</p>}
+        {resolution.reasonCodes.length > 0 && (
+          <ul className="reason-list" aria-label="Reasons an exact match was not made">
+            {resolution.reasonCodes.map((reason) => <li key={reason}>{reasonLabels[reason] ?? reason.replaceAll("_", " ")}</li>)}
+          </ul>
+        )}
+      </header>
+      <div className="candidate-list">
+        {ballots.map((item, index) => <BallotCard key={item.ballot.ballotVersionId}
+          ballot={item.ballot} support={item.supportedBy} demo={resolution.demonstration}
+          variant="plausible" explanation={item.explanation} position={index + 1} total={ballots.length} />)}
+      </div>
+      {resolution.officialContactLinks && resolution.officialContactLinks.length > 0 && (
+        <aside className="official-help"><h3>Confirm with an election official</h3><ul>
+          {resolution.officialContactLinks.map((link) => <li key={link}><a href={link} target="_blank" rel="noreferrer">Official election information</a></li>)}
+        </ul></aside>
+      )}
+    </div>
   );
 }
 
@@ -93,9 +140,7 @@ export default function Home() {
           {resolution.status === "resolved" && resolution.ballot && resolution.supportedBy ? (
             <BallotCard ballot={resolution.ballot} support={resolution.supportedBy} demo={resolution.demonstration} />
           ) : resolution.plausibleBallots?.length ? (
-            <div><h2>More than one ballot may apply</h2><p>{resolution.message}</p>
-              {resolution.plausibleBallots.map((item) => <BallotCard key={item.ballot.ballotVersionId}
-                ballot={item.ballot} support={item.supportedBy} demo={resolution.demonstration} />)}</div>
+            <UnresolvedComparison resolution={resolution} />
           ) : <p className="notice" role="status">{resolution.message}</p>}
           <p className="privacy-confirmation">Address saved: no</p>
         </section>

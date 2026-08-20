@@ -20,6 +20,7 @@ button:disabled { cursor: wait; opacity: .7; }
 .demo-banner strong { letter-spacing: .06em; text-transform: uppercase; }
 .ballot-card { background: white; border: 1px solid #bcccdc; border-top: 5px solid var(--blue); box-shadow: 0 8px 24px rgb(16 42 67 / 8%); padding: 1.5rem; }
 .ballot-card + .ballot-card { margin-top: 1.25rem; }
+.plausible-ballot { border-top-color: var(--gold); }
 .result-label { color: var(--blue); font-size: .78rem; font-weight: 700; letter-spacing: .08em; margin: 0; text-transform: uppercase; }
 .ballot-card h2 { font: 700 1.7rem/1.2 Georgia, serif; margin: .35rem 0; }
 .ballot-card h3 { border-top: 1px solid #d9e2ec; margin-top: 1.5rem; padding-top: 1.25rem; }
@@ -32,6 +33,17 @@ button:disabled { cursor: wait; opacity: .7; }
 .support-list li > span { color: #627d98; display: block; font-size: .78rem; margin-top: .15rem; text-transform: capitalize; }
 .support-list li > p { margin: .6rem 0; }
 .support-list .citation { margin-bottom: 0; }
+.comparison-header { background: #fff7df; border-left: 5px solid var(--gold); margin-bottom: 1.25rem; padding: 1.25rem 1.4rem; }
+.comparison-header h2 { font: 700 1.8rem/1.2 Georgia, serif; margin: .35rem 0 .6rem; }
+.comparison-header > p { line-height: 1.5; }
+.comparison-warning { border-top: 1px solid #e6c66e; padding-top: .9rem; }
+.confidence { color: #486581; font-size: .9rem; }
+.reason-list { margin-bottom: 0; padding-left: 1.25rem; }
+.reason-list li { margin-top: .35rem; }
+.possibility-explanation { background: #fff7df; border-left: 3px solid var(--gold); line-height: 1.5; padding: .8rem 1rem; }
+.official-help { background: white; border: 1px solid #bcccdc; margin-top: 1.25rem; padding: 1rem 1.25rem; }
+.official-help h3 { margin-top: 0; }
+.official-help a { color: var(--blue); }
 .privacy-confirmation { color: #486581; font-size: .85rem; text-align: right; }
 .principles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; max-width: 960px; margin: 0 auto; padding: 0 1.5rem 4rem; }
 .principles article { border-top: 3px solid var(--gold); background: white; padding: 1.25rem; }

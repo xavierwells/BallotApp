@@ -77,6 +77,12 @@ For interface review only, a synthetic resolved response can be enabled with
 ignored in production and is conspicuously labeled in both the API and web UI.
 The fixture contains no real address, boundary, candidate, or ballot data.
 
+For development-only interface review, set
+`BALLOT_RESOLUTION_DEMO_SCENARIO=ambiguous` or `source_conflict` alongside the
+enabled demo flag. These scenarios return two invented plausible ballots and
+never select either one. `resolved` remains the default. Demo scenarios are
+ignored when `APP_ENV=production`.
+
 ## Data refresh and audit
 
 Boundary records are versioned, never overwritten. Each import captures authority, source URL, retrieval time, effective date, geometry checksum, and reviewer. Refresh on official redistricting/precinct notices and, during an active election, follow the election verification cadence in the launch plan.

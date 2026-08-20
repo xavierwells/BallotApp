@@ -222,6 +222,9 @@ class ResolutionPipeline:
 class SyntheticDemoResolutionPipeline:
     """Development-only visual fixture; never represents an official ballot."""
 
+    def __init__(self, scenario: str = "resolved") -> None:
+        self.scenario = scenario if scenario in {"resolved", "ambiguous", "source_conflict"} else "resolved"
+
     def resolve(self, address: str) -> BallotResolutionResponse:
         del address
         checked_at = datetime(2026, 8, 20, tzinfo=UTC)
@@ -231,6 +234,46 @@ class SyntheticDemoResolutionPipeline:
             checked_at=checked_at,
             source_label="Invented source used only for interface review",
         )
+        if self.scenario in {"ambiguous", "source_conflict"}:
+            plausible_ballots = []
+            for index, area_name in enumerate(("Synthetic Precinct 101", "Synthetic Precinct 102"), start=1):
+                support = GeographicSupport(
+                    geographic_area_id=UUID(f"00000000-0000-0000-0000-{index + 20:012d}"),
+                    area_type="voting_precinct",
+                    name=area_name,
+                    boundary_version_id=UUID(f"10000000-0000-0000-0000-{index + 20:012d}"),
+                    explanation=f"Invented geographic evidence for {area_name}; interface review only.",
+                    source=source,
+                )
+                plausible_ballots.append(
+                    PlausibleBallot(
+                        ballot=BallotChoice(
+                            ballot_version_id=UUID(f"00000000-0000-0000-0000-{index + 100:012d}"),
+                            label=f"DEMO — Possible ballot {index}",
+                            election_name="Synthetic November 2026 Election",
+                            election_date=date(2026, 11, 3),
+                            official_source=source,
+                        ),
+                        supported_by=[support],
+                        explanation=(
+                            f"This invented ballot is shown because the available evidence supports {area_name}. "
+                            "It has not been selected as the voter's ballot."
+                        ),
+                    )
+                )
+            source_conflict = self.scenario == "source_conflict"
+            return MultipleBallotsResponse(
+                status="source_conflict" if source_conflict else "ambiguous",
+                demonstration=True,
+                confidence=35,
+                message=(
+                    "Invented official sources disagree, so no exact ballot was selected."
+                    if source_conflict
+                    else "The invented location is near a precinct boundary, so no exact ballot was selected."
+                ),
+                reason_codes=["boundary_source_conflict" if source_conflict else "near_boundary"],
+                plausible_ballots=plausible_ballots,
+            )
         return ResolvedBallotResponse(
             demonstration=True,
             confidence=100,
@@ -289,7 +332,7 @@ def _support(membership: BoundaryMembership) -> GeographicSupport:
 def pipeline_from_environment() -> ResolutionPipeline | SyntheticDemoResolutionPipeline:
     demo_enabled = os.getenv("BALLOT_RESOLUTION_DEMO_ENABLED", "false").strip().lower() == "true"
     if demo_enabled and os.getenv("APP_ENV", "development").strip().lower() == "development":
-        return SyntheticDemoResolutionPipeline()
+        return SyntheticDemoResolutionPipeline(os.getenv("BALLOT_RESOLUTION_DEMO_SCENARIO", "resolved").strip().lower())
     publication = os.getenv("BALLOT_RESOLUTION_PUBLICATION_ID", "").strip()
     election = os.getenv("BALLOT_RESOLUTION_ELECTION_ID", "").strip()
     election_date = os.getenv("BALLOT_RESOLUTION_ELECTION_DATE", "").strip()

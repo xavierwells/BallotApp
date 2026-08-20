@@ -170,3 +170,17 @@ def test_synthetic_demo_is_explicit_and_development_only(monkeypatch: pytest.Mon
     production = pipeline_from_environment().resolve(SYNTHETIC_ADDRESS)
     assert production.status == "not_available"
     assert production.demonstration is False
+
+
+def test_synthetic_ambiguous_demo_never_selects_a_ballot(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BALLOT_RESOLUTION_DEMO_ENABLED", "true")
+    monkeypatch.setenv("BALLOT_RESOLUTION_DEMO_SCENARIO", "ambiguous")
+    monkeypatch.setenv("APP_ENV", "development")
+
+    result = pipeline_from_environment().resolve(SYNTHETIC_ADDRESS)
+
+    assert result.status == "ambiguous"
+    assert result.demonstration is True
+    assert len(result.plausible_ballots) == 2  # type: ignore[attr-defined]
+    assert not hasattr(result, "ballot")
+    assert SYNTHETIC_ADDRESS not in repr(result)

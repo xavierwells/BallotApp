@@ -7,6 +7,10 @@ geometry is approved under the risk controls below. No current source is yet
 approved by itself for authoritative November 2026 address resolution; several
 are approved for reference import pending authority confirmation.
 
+**Import checkpoint:** The checksum-pinned TLC 2026-primary reference was
+successfully imported on 2026-08-20 as 98 draft boundaries: Bell 72, Coryell
+16, and Lampasas 10. These rows remain excluded from public resolution.
+
 ## Why one map is not enough
 
 An address may simultaneously belong to a county election precinct, city,
