@@ -34,6 +34,9 @@ Implemented:
   `PILOT_SOURCE_REVIEW.md`. All entries remain pending for content rights but
   use `direct_link_manual_check` for the initial launch; no source grants
   content retention, redistribution, or automated-monitoring rights.
+- An authority-scope audit is complete in `PILOT_AUTHORITY_SCOPE_AUDIT.md`.
+  It confirms the six loaded authorities and intentionally adds no special
+  district without official 2026 voter-election evidence.
 
 ## Next operator steps
 
@@ -111,3 +114,10 @@ terms, retention, redistribution, and monitoring rights have been reviewed.
 9. Which ticketing provider, if any, should be supported first? No ticketing
    integration should be implemented or enabled before this is chosen and its
    data-disclosure rules are reviewed.
+
+## Epic 2 completion boundary
+
+Epic 2 is complete for the chosen initial-launch policy: direct official links
+and manual verification checks only. The next required product work is Epic 3,
+where official boundary evidence and privacy-preserving resolution rules will
+determine how an address can map to an applicable ballot without being stored.

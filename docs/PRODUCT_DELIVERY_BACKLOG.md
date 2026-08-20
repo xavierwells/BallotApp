@@ -99,12 +99,12 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ### Tasks
 
-- [ ] Load Copperas Cove, Coryell/Bell/Lampasas County, CCISD, Texas, and applicable special-district authority records. The local pilot manifest and idempotent bootstrap command are ready; special districts still require official evidence.
+- [x] Load Copperas Cove, Coryell/Bell/Lampasas County, CCISD, Texas, and applicable special-district authority records. The six confirmed authorities are loaded. The authority-scope audit found no special-purpose body with official 2026 voter-election evidence, so none was invented; see `PILOT_AUTHORITY_SCOPE_AUDIT.md` for recheck triggers.
 - [x] Create the source registry and provider/data-license approval workflow. The six pilot sources have dated research records in `PILOT_SOURCE_REVIEW.md`; initial launch permits direct links and manual checks only, while content rights remain pending.
 - [x] Add object storage abstraction and checksum-based document records.
 - [x] Add manual document upload/retrieval metadata flow before automation.
 - [x] Add document page references and source-citation UI primitives.
-- [ ] Complete verification cadence and stale-source alerts for active elections. The policy, monitoring classes, check history, review/check operator commands, and hybrid alert lifecycle were successfully migrated through `008_source_use_scope` on 2026-08-20; the Copperas Cove registry was loaded with its direct-link/manual-check launch policy. The authenticated dashboard and notification delivery are Epic 4 work, and an approved monitoring adapter is still needed.
+- [x] Complete verification cadence and stale-source alerts for active elections. The policy, monitoring classes, check history, review/check operator commands, and hybrid alert lifecycle were successfully migrated through `008_source_use_scope` on 2026-08-20; the Copperas Cove registry was loaded with its direct-link/manual-check launch policy. The authenticated dashboard and notification delivery are explicitly deferred to Epic 4, and no monitoring adapter is enabled.
 
 ### Decision checkpoint
 
@@ -281,4 +281,4 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ## Priority now
 
-Epic 1 is complete. The active work is **Epic 2**. Its first task is to establish the official source registry and provider/data-license approval workflow before importing election records or source documents.
+Epics 0–2 are complete for the direct-link/manual-check initial-launch policy. The next active work is **Epic 3**: geographic districts and privacy-preserving ballot resolution.
