@@ -18,6 +18,10 @@ The migration integration test applies the schema to a new PostgreSQL database, 
 erDiagram
     ORGANIZATIONS ||--o{ PUBLICATIONS : owns
     PUBLICATIONS ||--o{ DOCUMENTS : retains
+    PUBLICATIONS ||--o{ ELECTION_AUTHORITIES : scopes
+    ELECTION_AUTHORITIES ||--o{ AUTHORITY_SOURCE_REGISTRY : owns
+    ELECTION_AUTHORITIES ||--o{ DOCUMENTS : publishes
+    AUTHORITY_SOURCE_REGISTRY ||--o{ DOCUMENTS : catalogs
     PUBLICATIONS ||--o{ ELECTIONS : publishes
     PUBLICATIONS ||--o{ OFFICES : defines
     PUBLICATIONS ||--o{ SOURCE_CLAIMS : scopes
@@ -52,6 +56,8 @@ verification_events
 | Table | Purpose | Required audit fields |
 | --- | --- | --- |
 | `documents` | Original authoritative/public documents and retrieval metadata | source URL, publisher, retrieved at, document date, checksum |
+| `election_authorities` | Bodies that administer or authoritatively publish election records | publication, stable slug, type, official website, lifecycle status |
+| `authority_source_registry` | External source endpoints and their approval state | authority, direct URL, terms/license, retention/redistribution review, reviewer/date |
 | `source_claims` | A single publishable factual assertion or attributed statement | claim text, claim type, source/document/page, status, confidence |
 | `verification_events` | Independent verification and correction history | verifier role, action, timestamp, before/after values |
 | `elections` | Election authority and event | authority, election date, jurisdiction |
@@ -71,5 +77,8 @@ verification_events
 - Claims include editorial status (`draft`, `needs_review`, `verified`, `published`, `retracted`, `superseded`), confidence, and a visible “last verified” time.
 - Candidate responses are source documents/claims, not automatically verified facts.
 - The schema stores no voter addresses, geocodes, or other voter-entered PII.
+- Every accepted source artifact is retained privately. A document defaults to
+  `metadata_only` public access; a visible copy requires an approved source
+  review that explicitly permits it.
 
 The physical schema may evolve, but these relationships and audit properties may not be bypassed for speed.

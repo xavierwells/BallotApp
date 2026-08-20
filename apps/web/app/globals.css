@@ -18,4 +18,10 @@ button { border: 0; border-radius: .4rem; background: var(--blue); color: white;
 .principles article { border-top: 3px solid var(--gold); background: white; padding: 1.25rem; }
 .principles h2 { margin: 0; font-size: 1.1rem; }
 .principles p { color: #486581; line-height: 1.5; }
+.source-citation { border-left: 3px solid var(--gold); background: white; color: #334e68; margin: 1rem 0; padding: 1rem 1.1rem; text-align: left; }
+.source-citation-label { color: var(--blue); font-size: .75rem; font-weight: 700; letter-spacing: .08em; margin: 0 0 .35rem; text-transform: uppercase; }
+.source-citation-title { font-weight: 700; margin: 0; }
+.source-citation-title a { color: var(--blue); }
+.source-citation-details, .source-citation-notice { font-size: .9rem; line-height: 1.45; margin: .45rem 0 0; }
+.source-citation-notice { color: #486581; }
 @media (max-width: 640px) { .hero { padding-top: 4rem; } .form-row { flex-direction: column; } .principles { grid-template-columns: 1fr; } }

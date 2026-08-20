@@ -38,7 +38,8 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "WHERE schemaname = 'public' AND tablename IN "
                     "('organizations', 'publications', 'documents', 'source_claims', "
                     "'verification_events', 'elections', 'ballot_versions', 'ballot_items', "
-                    "'offices', 'races', 'candidates', 'propositions')"
+                    "'offices', 'races', 'candidates', 'propositions', "
+                    "'election_authorities', 'authority_source_registry')"
                 )
             )
         }
@@ -63,10 +64,21 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                 )
             )
         }
+        document_columns = {
+            row[0]
+            for row in connection.execute(
+                text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema = 'public' AND table_name = 'documents' "
+                    "AND column_name IN ('artifact_retention', 'public_access_level', 'content_length_bytes')"
+                )
+            )
+        }
 
-    assert len(tables) == 12
+    assert len(tables) == 14
     assert {"draft", "verified", "published", "retracted", "superseded"} <= claim_statuses
     assert len(trigger_names) == 4
+    assert document_columns == {"artifact_retention", "public_access_level", "content_length_bytes"}
 
     # A second invocation proves the command is safe for an already-current database.
     command.upgrade(alembic_config(), "head")
@@ -75,6 +87,8 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
     organization_id = str(uuid4())
     publication_id = str(uuid4())
     document_id = str(uuid4())
+    authority_id = str(uuid4())
+    registry_entry_id = str(uuid4())
     with engine.begin() as connection:
         connection.execute(
             text(
@@ -96,6 +110,28 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
         )
         connection.execute(
             text(
+                "INSERT INTO election_authorities "
+                "(id, publication_id, slug, name, authority_type, official_website_url, status) "
+                "VALUES (:id, :publication_id, :slug, 'Test County', 'county', "
+                "'https://example.test/elections', 'active')"
+            ),
+            {
+                "id": authority_id,
+                "publication_id": publication_id,
+                "slug": f"test-county-{test_suffix}",
+            },
+        )
+        connection.execute(
+            text(
+                "INSERT INTO authority_source_registry "
+                "(id, authority_id, slug, name, source_url, source_category) "
+                "VALUES (:id, :authority_id, 'elections', 'Elections', "
+                "'https://example.test/elections', 'election_information')"
+            ),
+            {"id": registry_entry_id, "authority_id": authority_id},
+        )
+        connection.execute(
+            text(
                 "INSERT INTO documents "
                 "(id, publication_id, source_type, title, publisher_name, source_url, checksum_sha256, retrieved_at) "
                 "VALUES (:id, :publication_id, 'official_document', 'Test source', "
@@ -103,6 +139,53 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
             ),
             {"id": document_id, "publication_id": publication_id, "checksum": "a" * 64},
         )
+
+    with pytest.raises(DatabaseError, match="ck_authority_source_registry_approved_reviewed"):
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO authority_source_registry "
+                    "(id, authority_id, slug, name, source_url, source_category, approval_status) "
+                    "VALUES (:id, :authority_id, 'unreviewed-approved', 'Unreviewed', "
+                    "'https://example.test/unreviewed', 'other', 'approved')"
+                ),
+                {"id": str(uuid4()), "authority_id": authority_id},
+            )
+
+    second_authority_id = str(uuid4())
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO election_authorities "
+                "(id, publication_id, slug, name, authority_type, official_website_url, status) "
+                "VALUES (:id, :publication_id, :slug, 'Other County', 'county', "
+                "'https://example.test/other', 'active')"
+            ),
+            {
+                "id": second_authority_id,
+                "publication_id": publication_id,
+                "slug": f"other-county-{test_suffix}",
+            },
+        )
+
+    with pytest.raises(DatabaseError, match="fk_documents_registry_authority"):
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO documents "
+                    "(id, publication_id, election_authority_id, authority_source_registry_id, source_type, "
+                    "title, publisher_name, source_url, checksum_sha256, retrieved_at) "
+                    "VALUES (:id, :publication_id, :authority_id, :registry_id, 'official_document', "
+                    "'Mismatched source', 'Other County', 'https://example.test/elections', :checksum, CURRENT_TIMESTAMP)"
+                ),
+                {
+                    "id": str(uuid4()),
+                    "publication_id": publication_id,
+                    "authority_id": second_authority_id,
+                    "registry_id": registry_entry_id,
+                    "checksum": "b" * 64,
+                },
+            )
 
     with pytest.raises(DatabaseError, match="linked verification event"):
         with engine.begin() as connection:

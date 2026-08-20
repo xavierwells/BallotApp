@@ -21,8 +21,12 @@ services:
       APP_ENV: development
       PUBLIC_WEB_ORIGIN: ${PUBLIC_WEB_ORIGIN:-http://localhost:3000}
       DATABASE_URL: postgresql://${POSTGRES_USER:-ballot}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-ballot}
+      DOCUMENT_STORAGE_BACKEND: ${DOCUMENT_STORAGE_BACKEND:-filesystem}
+      DOCUMENT_STORAGE_ROOT: ${DOCUMENT_STORAGE_ROOT:-/var/lib/ballot/documents}
     ports:
       - "${API_PORT:-8080}:8080"
+    volumes:
+      - document_data:/var/lib/ballot/documents
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -74,3 +78,4 @@ services:
 
 volumes:
   postgres_data:
+  document_data:

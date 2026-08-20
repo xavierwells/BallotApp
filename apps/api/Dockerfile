@@ -45,7 +45,9 @@ RUN rm -rf /usr/local/bin/pip \
         /usr/local/lib/python3.13/site-packages/setuptools-*.dist-info \
         /usr/local/lib/python3.13/site-packages/distutils-precedence.pth \
     && addgroup -S -g 10001 appgroup \
-    && adduser -S -u 10001 -G appgroup appuser
+    && adduser -S -u 10001 -G appgroup appuser \
+    && mkdir -p /var/lib/ballot/documents \
+    && chown -R appuser:appgroup /var/lib/ballot
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY app ./app

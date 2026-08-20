@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "publication": {
+    "organizationSlug": "whats-on-my-ballot",
+    "organizationName": "What's on My Ballot",
+    "slug": "copperas-cove",
+    "name": "What's on My Ballot: Copperas Cove"
+  },
+  "authorities": [
+    {
+      "slug": "city-of-copperas-cove",
+      "name": "City of Copperas Cove",
+      "authorityType": "municipality",
+      "officialWebsiteUrl": "https://www.copperascovetx.gov/188/Election-Information",
+      "sources": [
+        {
+          "slug": "election-information",
+          "name": "Election Information",
+          "sourceUrl": "https://www.copperascovetx.gov/188/Election-Information",
+          "sourceCategory": "election_information"
+        }
+      ]
+    },
+    {
+      "slug": "coryell-county",
+      "name": "Coryell County",
+      "authorityType": "county",
+      "officialWebsiteUrl": "https://coryellcountytax.com/Elections/",
+      "sources": [
+        {
+          "slug": "elections",
+          "name": "Elections",
+          "sourceUrl": "https://coryellcountytax.com/Elections/",
+          "sourceCategory": "election_information"
+        }
+      ]
+    },
+    {
+      "slug": "bell-county",
+      "name": "Bell County",
+      "authorityType": "county",
+      "officialWebsiteUrl": "https://www.bellcountytx.com/departments/elections/index.php",
+      "sources": [
+        {
+          "slug": "elections",
+          "name": "Elections",
+          "sourceUrl": "https://www.bellcountytx.com/departments/elections/index.php",
+          "sourceCategory": "election_information"
+        }
+      ]
+    },
+    {
+      "slug": "lampasas-county",
+      "name": "Lampasas County",
+      "authorityType": "county",
+      "officialWebsiteUrl": "https://www.co.lampasas.tx.us/page/lampasas.testpage2",
+      "sources": [
+        {
+          "slug": "elections",
+          "name": "Elections Office",
+          "sourceUrl": "https://www.co.lampasas.tx.us/page/lampasas.testpage2",
+          "sourceCategory": "election_information"
+        }
+      ]
+    },
+    {
+      "slug": "copperas-cove-isd",
+      "name": "Copperas Cove Independent School District",
+      "authorityType": "school_district",
+      "officialWebsiteUrl": "https://www.ccisd.com/page/election-2026",
+      "sources": [
+        {
+          "slug": "election-2026",
+          "name": "Election 2026",
+          "sourceUrl": "https://www.ccisd.com/page/election-2026",
+          "sourceCategory": "election_information"
+        }
+      ]
+    },
+    {
+      "slug": "texas-secretary-of-state-elections",
+      "name": "Texas Secretary of State, Elections Division",
+      "authorityType": "state",
+      "officialWebsiteUrl": "https://www.sos.state.tx.us/elections/index.shtml",
+      "sources": [
+        {
+          "slug": "texas-elections",
+          "name": "Texas Elections",
+          "sourceUrl": "https://www.sos.state.tx.us/elections/index.shtml",
+          "sourceCategory": "election_information"
+        }
+      ]
+    }
+  ]
+}

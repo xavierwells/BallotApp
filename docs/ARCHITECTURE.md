@@ -8,7 +8,7 @@ Browser
   └── Civic API (FastAPI / OpenAPI)
           ├── PostgreSQL + PostGIS (civic and provenance data)
           ├── Valkey (future job queue/cache)
-          └── Object storage (future source documents)
+          └── Private document storage (source evidence)
 ```
 
 ## API boundaries
@@ -33,6 +33,16 @@ Address resolution is an ephemeral service boundary. It returns ballot applicabi
 2. **Jurisdiction resolution:** coordinates to precinct, district, and ballot style. This is a self-owned PostGIS process backed by official boundary data, never a black-box civic-data provider.
 
 The authoritative resolver may only select an approved geocoder adapter after the provider's license, terms, cost, and privacy policy have been reviewed. Read [`ADDRESS_RESOLUTION.md`](ADDRESS_RESOLUTION.md) before implementing either stage.
+
+## Source-document storage
+
+Source artifacts are content-addressed by SHA-256 and retained privately for
+provenance. The current `filesystem` backend runs on the same private volume
+as a self-hosted API. Its `DocumentStore` contract intentionally has no public
+URL operation; a future approved S3-compatible adapter can use DigitalOcean
+Spaces or another provider without changing the document model. See
+[`SOURCE_REGISTRY.md`](SOURCE_REGISTRY.md) for the separate public-visibility
+policy.
 
 ## Provenance before profiles
 
