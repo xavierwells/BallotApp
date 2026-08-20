@@ -17,6 +17,12 @@ Only the components listed below are approved for the initial scaffold. This is 
 | Trivy | vulnerability, secret, misconfiguration, license, image, and SBOM scanner | Apache-2.0 | [upstream project](https://github.com/aquasecurity/trivy) |
 | GitHub checkout action | CI source checkout | MIT | [upstream project](https://github.com/actions/checkout) |
 
+## Explicitly excluded dependencies
+
+| Component | Reason | Decision |
+| --- | --- | --- |
+| Sharp and `@img/sharp-*` / `@img/sharp-libvips-*` | Optional Next.js image-processing chain includes LGPL-3.0-or-later libvips binaries. | Rejected for the 2026 pilot; npm installs omit optional dependencies. Reconsider only through a recorded license exception and image-optimization design review. |
+
 ## Pending approval template
 
 | Field | Required value |

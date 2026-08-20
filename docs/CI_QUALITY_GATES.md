@@ -16,4 +16,6 @@ The repository includes `.github/workflows/ci.yml` as a reference GitHub Actions
 
 The workflow uses immutable application dependency versions and `npm ci`. Before a production release, replace scanner image tags with reviewed image digests and retain SBOM output with the release record.
 
+The web app's `.npmrc` and all web install commands omit optional dependencies. This intentionally excludes Next's optional Sharp/libvips image-processing chain, which is not approved for the 2026 pilot.
+
 Never grant a CI job write permissions, cloud credentials, production database access, or user data. CI tests use synthetic data only.

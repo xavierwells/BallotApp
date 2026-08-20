@@ -21,7 +21,7 @@ jobs:
           cd apps/api && python3 -m pytest -q
       - name: Build the web application from the lockfile
         run: |
-          cd apps/web && npm ci && npm run build
+          cd apps/web && npm ci --omit=optional && npm run build
 
   security:
     runs-on: ubuntu-latest
@@ -32,7 +32,7 @@ jobs:
           python3 -m pip install --disable-pip-version-check pip-audit==2.10.0
           python3 -m pip_audit -r apps/api/requirements.txt
       - name: Audit web dependencies from the lockfile
-        run: cd apps/web && npm ci --ignore-scripts && npm audit --omit=dev --audit-level=high
+        run: cd apps/web && npm ci --ignore-scripts --omit=optional && npm audit --omit=dev --omit=optional --audit-level=high
       - name: Scan source for secrets, configuration, vulnerabilities, and licenses
         run: |
           docker run --rm -v "$PWD:/src:ro" aquasec/trivy:0.69.3 \
