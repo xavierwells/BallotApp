@@ -3,7 +3,7 @@
 ## Current state
 
 Epic 2 has its data and operator foundations. Docker Compose successfully
-applied the complete migration chain through `007_source_check_operations` on
+applied the complete migration chain through `008_source_use_scope` on
 2026-08-20.
 
 Implemented:
@@ -46,10 +46,9 @@ docker compose logs migrate
 docker compose exec postgres psql -U ballot -d ballot -c "SELECT version_num FROM alembic_version;"
 ```
 
-Current verified deployed version: `007_source_check_operations`. The current
-working tree adds `008_source_use_scope`; after it is committed or pulled,
-Compose should advance the database to that revision and the bootstrap command
-will apply the direct-link/manual-check policy to the six pilot entries.
+Current verified deployed version: `008_source_use_scope`. The Copperas Cove
+bootstrap was also run successfully: six authorities and six pending-review
+sources are registered with the direct-link/manual-check launch scope.
 
 Then load the pending-review pilot registry without contacting any external
 source:

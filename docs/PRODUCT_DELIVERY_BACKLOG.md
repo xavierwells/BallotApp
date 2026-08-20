@@ -104,7 +104,7 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [x] Add object storage abstraction and checksum-based document records.
 - [x] Add manual document upload/retrieval metadata flow before automation.
 - [x] Add document page references and source-citation UI primitives.
-- [ ] Complete verification cadence and stale-source alerts for active elections. The policy, monitoring classes, check history, review/check operator commands, and hybrid alert lifecycle were successfully migrated through `007_source_check_operations` on 2026-08-20; `008_source_use_scope` implements the direct-link/manual-check launch policy. The authenticated dashboard and notification delivery are Epic 4 work, and an approved monitoring adapter is still needed.
+- [ ] Complete verification cadence and stale-source alerts for active elections. The policy, monitoring classes, check history, review/check operator commands, and hybrid alert lifecycle were successfully migrated through `008_source_use_scope` on 2026-08-20; the Copperas Cove registry was loaded with its direct-link/manual-check launch policy. The authenticated dashboard and notification delivery are Epic 4 work, and an approved monitoring adapter is still needed.
 
 ### Decision checkpoint
 
