@@ -1,6 +1,6 @@
 """Track private document retention and public visibility separately.
 
-Revision ID: 003_document_retention_visibility
+Revision ID: 003_doc_retention
 Revises: 002_authority_source_registry
 Create Date: 2026-08-20
 """
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "003_document_retention_visibility"
+revision = "003_doc_retention"
 down_revision = "002_authority_source_registry"
 branch_labels = None
 depends_on = None

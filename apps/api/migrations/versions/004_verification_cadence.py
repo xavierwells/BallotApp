@@ -1,7 +1,7 @@
 """Add adjustable source verification cadence and immutable check history.
 
 Revision ID: 004_verification_cadence
-Revises: 003_document_retention_visibility
+Revises: 003_doc_retention
 Create Date: 2026-08-20
 """
 
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 
 revision = "004_verification_cadence"
-down_revision = "003_document_retention_visibility"
+down_revision = "003_doc_retention"
 branch_labels = None
 depends_on = None
 
