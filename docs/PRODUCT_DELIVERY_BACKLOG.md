@@ -99,12 +99,12 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ### Tasks
 
-- [ ] Create Copperas Cove, Coryell/Bell/Lampasas County, CCISD, Texas, and applicable special-district authority records.
-- [ ] Create the source registry and provider/data-license approval workflow.
-- [ ] Add object storage abstraction and checksum-based document records.
-- [ ] Add manual document upload/retrieval metadata flow before automation.
-- [ ] Add document page references and source-citation UI primitives.
-- [ ] Add verification cadence and stale-source alerts for active elections.
+- [ ] Load Copperas Cove, Coryell/Bell/Lampasas County, CCISD, Texas, and applicable special-district authority records. The local pilot manifest and idempotent bootstrap command are ready; special districts still require official evidence.
+- [x] Create the source registry and provider/data-license approval workflow.
+- [x] Add object storage abstraction and checksum-based document records.
+- [x] Add manual document upload/retrieval metadata flow before automation.
+- [x] Add document page references and source-citation UI primitives.
+- [ ] Complete verification cadence and stale-source alerts for active elections. The policy, monitoring classes, check history, review/check operator commands, and hybrid alert lifecycle were successfully migrated through `007_source_check_operations` on 2026-08-20; the authenticated dashboard and notification delivery are Epic 4 work, and an approved monitoring adapter is still needed.
 
 ### Decision checkpoint
 
@@ -168,7 +168,8 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [ ] Build authenticated editorial roles: researcher, verifier, editor, publisher, administrator.
 - [ ] Build candidate, office, race, proposition, and questionnaire editorial forms on top of the provenance schema.
 - [ ] Add candidate outreach templates, deadlines, reminders, and immutable communication log.
-- [ ] Add research-task queues driven by missing evidence, verification state, and election urgency.
+- [ ] Add research-task queues driven by missing evidence, verification state, election urgency, and overdue-source alerts; make the editorial dashboard the default alert destination.
+- [ ] Add editor-controlled, opt-in email preferences for alerts they are authorized to view; keep any ticketing adapter disabled until a provider and disclosure review are approved.
 - [ ] Add two-person ballot verification workflow and publication gate.
 - [ ] Add candidate correction requests and public correction-log workflow.
 - [ ] Add manual import tools for ballot PDF text/OCR drafts; require human verification before publication.

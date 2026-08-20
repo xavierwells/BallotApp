@@ -41,6 +41,32 @@ An official government domain is evidence of ownership, not a blanket
 license to redistribute documents or use an API. Pending entries are safe to
 catalog but not yet eligible for automated retrieval.
 
+Until Epic 4 provides authenticated editorial roles, the review decision is an
+operator-only local command. Approval requires every review field that the
+database constraint requires; the command never contacts the external URL.
+
+```sh
+cd apps/api
+python -m app.cli.review_source \
+  --organization-slug whats-on-my-ballot \
+  --publication-slug copperas-cove \
+  --authority-slug city-of-copperas-cove \
+  --source-slug election-information \
+  --approval-status approved \
+  --reviewer-reference editor-123 \
+  --terms-url https://authority.example/terms \
+  --source-license "public-record terms reviewed" \
+  --cost-model free \
+  --rate-limit "no automated use approved" \
+  --retention-rule "retain privately for provenance" \
+  --attribution-requirement "cite the authority and source URL" \
+  --redistribution-rights metadata_only
+```
+
+`--automated-monitoring-allowed` is opt-in and accepted only with an
+`approved` decision. A retired source cannot be reactivated; register a
+replacement source for fresh review instead.
+
 ## Retention and visibility policy
 
 Every accepted source artifact is retained privately as provenance evidence,
@@ -61,9 +87,22 @@ The retained artifact is private to the deployment and is never exposed by a
 
 ## Verification cadence and stale-source queue
 
-The built-in cadence is the approved starting policy: monthly outside an
-active election, weekly during the final 90 days, and daily from official
-ballot availability through election day. It is not a hard-coded tenant rule.
+The built-in cadence is the approved starting policy, applied by monitoring
+class rather than indiscriminately to every source:
+
+- `active_ballot`: daily only after an official ballot is available and the
+  authority has an election within 90 days; weekly during that window before
+  the ballot is available.
+- `active_election`: weekly during the final 90 days.
+- `reference`: monthly, including during an active election.
+- `disabled`: never queued unless an editor deliberately changes the class.
+
+An approved source may be monitored automatically only when its reviewed terms
+explicitly permit that method (`automated_monitoring_allowed`). Otherwise a
+dashboard task is created only at the relevant cadence. Automated checks look
+for availability or change signals; they do not publish a change. A human
+reviews every exception, retains any replacement artifact, and updates ballot
+data through the normal verification workflow.
 
 `verification_cadence_policies` accepts one policy at each scope, resolved in
 this order: election authority, publication, organization, then the built-in
@@ -72,6 +111,69 @@ well as hosted publication and authority overrides. `source_verification_checks`
 keeps immutable check history, while `authority_source_registry.next_check_at`
 drives the future queue/alert job. No external retrieval is enabled by this
 schema; a check must be explicitly performed and recorded.
+
+Until Epic 4 provides the authenticated dashboard, an operator records a
+completed **manual** check through the local command below. It is deliberately
+tenant-scoped and requires the source to be approved. The operator supplies
+the next due time after applying the active cadence policy; the command does
+not retrieve the URL or attempt to decide whether a ballot is official.
+
+```sh
+cd apps/api
+python -m app.cli.record_source_check \
+  --organization-slug whats-on-my-ballot \
+  --publication-slug copperas-cove \
+  --authority-slug city-of-copperas-cove \
+  --source-slug election-information \
+  --result unchanged \
+  --checker-reference editor-123 \
+  --next-check-at 2026-08-27T12:00:00Z
+```
+
+The completed check is immutable. Database triggers update the source's
+`last_checked_at` and `next_check_at` only when the new check is not older
+than the recorded one. A `changed`, `unavailable`, or `terms_changed` result
+opens its corresponding investigation alert automatically.
+
+## Stale-source alert delivery
+
+The editorial dashboard is the required default destination for an overdue
+source. It is the only delivery channel enabled in a fresh deployment.
+
+- An authenticated editor may later opt in to email notifications for the
+  dashboard alerts they are permitted to see. Email is never enabled solely
+  because an account exists.
+- A ticketing-system integration is a future optional adapter. It remains
+  disabled until a provider, authentication method, routing rules, and data
+  disclosure review are approved; no provider is assumed by this project.
+- Alert data is editorial operational data only. It must not contain entered
+  addresses, voter information, or private object-storage URLs.
+
+The dashboard, editorial identities, notification preferences, and ticketing
+adapter configuration are implemented in Epic 4, where their authorization
+boundaries can be enforced.
+
+## Hybrid alert lifecycle
+
+An overdue-source alert is automatically resolved only when a **manual** check
+records `unchanged`. The resolution is retained as `automatic_unchanged` and
+links to that immutable check record. An automated no-change signal cannot
+close an alert by itself.
+
+Checks that find a changed, unavailable, or terms-changed source keep the
+associated investigation alert open. An authorized editor will later resolve
+it explicitly after retaining a replacement artifact, updating the registry,
+or retiring the source. `source_alerts` stores this state now; its dashboard
+workflow is intentionally deferred to Epic 4.
+
+Before the dashboard's scheduled worker exists, an operator can queue overdue
+work with a local, repeat-safe command. It only evaluates database timestamps;
+it makes no network request and creates no duplicate open alert.
+
+```sh
+cd apps/api
+python -m app.cli.queue_overdue_source_alerts
+```
 
 ## Copperas Cove pilot registry
 
@@ -102,6 +204,12 @@ python -m app.cli.bootstrap_authorities
 The command is safe to repeat. It creates the publication if needed, upserts
 authority metadata, adds only new pending-review sources, and refuses to
 silently change an existing source URL.
+
+Compose mounts this editable manifest into the API container read-only at
+`/app/data/authorities`; the API image itself does not embed pilot-specific
+configuration. A self-hosted operator can supply another local manifest with
+the command's `--manifest` argument or the `AUTHORITY_MANIFEST_PATH`
+environment variable.
 
 ## Manual document intake
 

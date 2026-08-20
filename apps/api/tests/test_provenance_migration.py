@@ -40,7 +40,7 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'verification_events', 'elections', 'ballot_versions', 'ballot_items', "
                     "'offices', 'races', 'candidates', 'propositions', "
                     "'election_authorities', 'authority_source_registry', "
-                    "'verification_cadence_policies', 'source_verification_checks')"
+                    "'verification_cadence_policies', 'source_verification_checks', 'source_alerts')"
                 )
             )
         }
@@ -63,7 +63,10 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'source_claims_published_immutable', "
                     "'source_claims_require_publication_event', "
                     "'verification_cadence_policies_scope_valid', "
-                    "'source_verification_checks_immutable')"
+                    "'source_verification_checks_immutable', "
+                    "'source_alerts_resolve_after_manual_unchanged_check', "
+                    "'source_registry_schedule_after_check', "
+                    "'source_alerts_open_after_source_check')"
                 )
             )
         }
@@ -77,11 +80,22 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                 )
             )
         }
+        source_registry_columns = {
+            row[0]
+            for row in connection.execute(
+                text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema = 'public' AND table_name = 'authority_source_registry' "
+                    "AND column_name IN ('monitoring_class', 'automated_monitoring_allowed')"
+                )
+            )
+        }
 
-    assert len(tables) == 16
+    assert len(tables) == 17
     assert {"draft", "verified", "published", "retracted", "superseded"} <= claim_statuses
-    assert len(trigger_names) == 6
+    assert len(trigger_names) == 9
     assert document_columns == {"artifact_retention", "public_access_level", "content_length_bytes"}
+    assert source_registry_columns == {"monitoring_class", "automated_monitoring_allowed"}
 
     # A second invocation proves the command is safe for an already-current database.
     command.upgrade(alembic_config(), "head")
@@ -189,6 +203,86 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "checksum": "b" * 64,
                 },
             )
+
+    automatic_alert_id = str(uuid4())
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO source_alerts (id, authority_source_registry_id, alert_type) "
+                "VALUES (:id, :registry_id, 'verification_overdue')"
+            ),
+            {"id": automatic_alert_id, "registry_id": registry_entry_id},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO source_verification_checks "
+                "(id, authority_source_registry_id, checked_at, result, checker_reference, next_check_at, check_method) "
+                "VALUES (:id, :registry_id, CURRENT_TIMESTAMP, 'unchanged', 'test-researcher', "
+                "CURRENT_TIMESTAMP + INTERVAL '7 days', 'manual')"
+            ),
+            {"id": str(uuid4()), "registry_id": registry_entry_id},
+        )
+        automatic_alert = connection.execute(
+            text("SELECT status, resolution FROM source_alerts WHERE id = :id"),
+            {"id": automatic_alert_id},
+        ).mappings().one()
+
+    assert automatic_alert["status"] == "resolved"
+    assert automatic_alert["resolution"] == "automatic_unchanged"
+
+    automated_alert_id = str(uuid4())
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO source_alerts (id, authority_source_registry_id, alert_type) "
+                "VALUES (:id, :registry_id, 'verification_overdue')"
+            ),
+            {"id": automated_alert_id, "registry_id": registry_entry_id},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO source_verification_checks "
+                "(id, authority_source_registry_id, checked_at, result, checker_reference, next_check_at, check_method) "
+                "VALUES (:id, :registry_id, CURRENT_TIMESTAMP, 'unchanged', 'source-monitor', "
+                "CURRENT_TIMESTAMP + INTERVAL '1 day', 'automated')"
+            ),
+            {"id": str(uuid4()), "registry_id": registry_entry_id},
+        )
+        automated_alert = connection.execute(
+            text("SELECT status FROM source_alerts WHERE id = :id"),
+            {"id": automated_alert_id},
+        ).scalar_one()
+
+    assert automated_alert == "open"
+
+    changed_check_id = str(uuid4())
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO source_verification_checks "
+                "(id, authority_source_registry_id, checked_at, result, checker_reference, next_check_at, check_method) "
+                "VALUES (:id, :registry_id, CURRENT_TIMESTAMP + INTERVAL '1 hour', 'changed', 'test-researcher', "
+                "CURRENT_TIMESTAMP + INTERVAL '7 days', 'manual')"
+            ),
+            {"id": changed_check_id, "registry_id": registry_entry_id},
+        )
+        changed_alert = connection.execute(
+            text(
+                "SELECT alert_type, source_verification_check_id FROM source_alerts "
+                "WHERE authority_source_registry_id = :registry_id AND alert_type = 'source_changed' AND status = 'open'"
+            ),
+            {"registry_id": registry_entry_id},
+        ).mappings().one()
+        schedule = connection.execute(
+            text(
+                "SELECT last_checked_at, next_check_at FROM authority_source_registry WHERE id = :registry_id"
+            ),
+            {"registry_id": registry_entry_id},
+        ).mappings().one()
+
+    assert str(changed_alert["source_verification_check_id"]) == changed_check_id
+    assert schedule["last_checked_at"] is not None
+    assert schedule["next_check_at"] is not None
 
     with pytest.raises(DatabaseError, match="linked verification event"):
         with engine.begin() as connection:

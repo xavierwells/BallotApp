@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +17,27 @@ from sqlalchemy import text
 from app.database import get_engine
 
 
-DEFAULT_MANIFEST = Path(__file__).resolve().parents[4] / "data" / "authorities" / "copperas-cove-pilot.json"
+MANIFEST_RELATIVE_PATH = Path("data") / "authorities" / "copperas-cove-pilot.json"
+
+
+def default_manifest_path() -> Path:
+    """Locate the manifest in a checkout or at the Compose-mounted path.
+
+    The API image deliberately contains only API code. Compose provides the
+    editable pilot manifest as a read-only mount, while a source checkout has
+    it at the repository root.
+    """
+    configured_path = os.getenv("AUTHORITY_MANIFEST_PATH")
+    if configured_path:
+        return Path(configured_path)
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / MANIFEST_RELATIVE_PATH
+        if candidate.is_file():
+            return candidate
+    return Path("/app") / MANIFEST_RELATIVE_PATH
+
+
+DEFAULT_MANIFEST = default_manifest_path()
 ALLOWED_AUTHORITY_TYPES = {
     "municipality",
     "county",
@@ -34,6 +55,7 @@ ALLOWED_SOURCE_CATEGORIES = {
     "boundaries",
     "other",
 }
+ALLOWED_MONITORING_CLASSES = {"active_ballot", "active_election", "reference", "disabled"}
 
 
 def read_manifest(path: Path) -> dict[str, Any]:
@@ -64,6 +86,8 @@ def read_manifest(path: Path) -> dict[str, Any]:
         for source in sources:
             if source.get("sourceCategory") not in ALLOWED_SOURCE_CATEGORIES:
                 raise ValueError(f"unsupported source category: {source.get('sourceCategory')!r}")
+            if source.get("monitoringClass", "reference") not in ALLOWED_MONITORING_CLASSES:
+                raise ValueError(f"unsupported monitoring class: {source.get('monitoringClass')!r}")
             if not str(source.get("sourceUrl", "")).startswith("https://"):
                 raise ValueError("source URLs must use HTTPS")
             if source.get("approvalStatus", "pending_review") != "pending_review":
@@ -139,9 +163,9 @@ def bootstrap(manifest: dict[str, Any]) -> tuple[int, int]:
                 connection.execute(
                     text(
                         "INSERT INTO authority_source_registry "
-                        "(id, authority_id, slug, name, source_url, source_category, approval_status) "
+                        "(id, authority_id, slug, name, source_url, source_category, monitoring_class, approval_status) "
                         "VALUES (gen_random_uuid(), :authority_id, :slug, :name, :source_url, :source_category, "
-                        "'pending_review')"
+                        ":monitoring_class, 'pending_review')"
                     ),
                     {
                         "authority_id": authority_id,
@@ -149,6 +173,7 @@ def bootstrap(manifest: dict[str, Any]) -> tuple[int, int]:
                         "name": source["name"],
                         "source_url": source["sourceUrl"],
                         "source_category": source["sourceCategory"],
+                        "monitoring_class": source.get("monitoringClass", "reference"),
                     },
                 )
                 source_count += 1

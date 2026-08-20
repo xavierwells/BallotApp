@@ -27,7 +27,7 @@ COPY alembic.ini ./
 COPY migrations ./migrations
 COPY app ./app
 COPY tests ./tests
-CMD ["pytest", "-q"]
+CMD ["python", "-m", "pytest", "-q"]
 
 FROM base AS runtime
 # The API never installs packages at runtime.  Remove pip, setuptools, and

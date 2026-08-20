@@ -17,7 +17,8 @@
           "slug": "election-information",
           "name": "Election Information",
           "sourceUrl": "https://www.copperascovetx.gov/188/Election-Information",
-          "sourceCategory": "election_information"
+          "sourceCategory": "election_information",
+          "monitoringClass": "active_election"
         }
       ]
     },
@@ -31,7 +32,8 @@
           "slug": "elections",
           "name": "Elections",
           "sourceUrl": "https://coryellcountytax.com/Elections/",
-          "sourceCategory": "election_information"
+          "sourceCategory": "election_information",
+          "monitoringClass": "active_election"
         }
       ]
     },
@@ -45,7 +47,8 @@
           "slug": "elections",
           "name": "Elections",
           "sourceUrl": "https://www.bellcountytx.com/departments/elections/index.php",
-          "sourceCategory": "election_information"
+          "sourceCategory": "election_information",
+          "monitoringClass": "active_election"
         }
       ]
     },
@@ -59,7 +62,8 @@
           "slug": "elections",
           "name": "Elections Office",
           "sourceUrl": "https://www.co.lampasas.tx.us/page/lampasas.testpage2",
-          "sourceCategory": "election_information"
+          "sourceCategory": "election_information",
+          "monitoringClass": "active_election"
         }
       ]
     },
@@ -73,7 +77,8 @@
           "slug": "election-2026",
           "name": "Election 2026",
           "sourceUrl": "https://www.ccisd.com/page/election-2026",
-          "sourceCategory": "election_information"
+          "sourceCategory": "election_information",
+          "monitoringClass": "active_election"
         }
       ]
     },
@@ -87,7 +92,8 @@
           "slug": "texas-elections",
           "name": "Texas Elections",
           "sourceUrl": "https://www.sos.state.tx.us/elections/index.shtml",
-          "sourceCategory": "election_information"
+          "sourceCategory": "election_information",
+          "monitoringClass": "active_election"
         }
       ]
     }
