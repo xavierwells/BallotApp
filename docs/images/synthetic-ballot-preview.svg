@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title description">
+  <title id="title">Synthetic ballot resolution interface preview</title>
+  <description id="description">A clearly labeled synthetic demonstration showing an invented Copperas Cove-style ballot and three invented geographic matches.</description>
+  <rect width="1200" height="675" fill="#f5f8fc"/>
+  <rect width="1200" height="12" fill="#0b4f86"/>
+  <text x="600" y="71" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="2" fill="#0b4f86">COPPERAS COVE PILOT</text>
+  <text x="600" y="125" text-anchor="middle" font-family="Georgia, serif" font-size="48" font-weight="700" fill="#082e52">What's on your ballot?</text>
+  <text x="600" y="159" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#173b5b">Every race. Every candidate. Every proposition. Explained and sourced.</text>
+  <rect x="110" y="195" width="980" height="66" fill="#fff2c7" stroke="#d49b00"/>
+  <text x="136" y="222" font-family="Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.5">SYNTHETIC DEMONSTRATION</text>
+  <text x="136" y="246" font-family="Arial, sans-serif" font-size="15">No real address, boundary, candidate, or official ballot data is shown.</text>
+  <rect x="110" y="279" width="980" height="350" fill="white" stroke="#9db5cb"/>
+  <rect x="110" y="279" width="980" height="6" fill="#0b4f86"/>
+  <text x="145" y="322" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.4" fill="#0b4f86">RESOLVED BALLOT</text>
+  <text x="145" y="360" font-family="Georgia, serif" font-size="30" font-weight="700" fill="#082e52">DEMO — Synthetic Copperas Cove-style ballot</text>
+  <text x="145" y="390" font-family="Arial, sans-serif" font-size="16" fill="#245a87">Synthetic November 2026 Election · November 3, 2026</text>
+  <text x="145" y="422" font-family="Arial, sans-serif" font-size="13" fill="#173b5b">Synthetic source: invented source used only for interface review · not official</text>
+  <line x1="145" y1="447" x2="1055" y2="447" stroke="#c8d6e3"/>
+  <text x="145" y="482" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#082e52">Why this ballot matched</text>
+  <g transform="translate(145 504)">
+    <rect width="280" height="91" fill="#edf3f8"/><rect width="5" height="91" fill="#dfa900"/>
+    <text x="22" y="29" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#082e52">Synthetic City Area</text>
+    <text x="22" y="52" font-family="Arial, sans-serif" font-size="12" fill="#50708d">Municipality</text>
+    <text x="22" y="75" font-family="Arial, sans-serif" font-size="12" fill="#173b5b">Invented boundary match</text>
+  </g>
+  <g transform="translate(455 504)">
+    <rect width="280" height="91" fill="#edf3f8"/><rect width="5" height="91" fill="#dfa900"/>
+    <text x="22" y="29" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#082e52">Synthetic Precinct 101</text>
+    <text x="22" y="52" font-family="Arial, sans-serif" font-size="12" fill="#50708d">Voting precinct</text>
+    <text x="22" y="75" font-family="Arial, sans-serif" font-size="12" fill="#173b5b">Invented precinct membership</text>
+  </g>
+  <g transform="translate(765 504)">
+    <rect width="280" height="91" fill="#edf3f8"/><rect width="5" height="91" fill="#dfa900"/>
+    <text x="22" y="29" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#082e52">Synthetic School District</text>
+    <text x="22" y="52" font-family="Arial, sans-serif" font-size="12" fill="#50708d">School district</text>
+    <text x="22" y="75" font-family="Arial, sans-serif" font-size="12" fill="#173b5b">Invented district membership</text>
+  </g>
+  <text x="1080" y="652" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#50708d">Address saved: no</text>
+</svg>
