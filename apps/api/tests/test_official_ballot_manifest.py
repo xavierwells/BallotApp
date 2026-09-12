@@ -49,3 +49,29 @@ def test_manifest_rejects_unverified_geographic_requirement(tmp_path: Path) -> N
     path.write_text(json.dumps(content), encoding="utf-8")
     with pytest.raises(ValueError, match="verifiedByReference"):
         read_manifest(path)
+
+
+def test_manifest_accepts_election_specific_party_labels(tmp_path: Path) -> None:
+    content = json.loads(fixture_path().read_text(encoding="utf-8"))
+    content["races"][0]["candidates"][0]["partyLabel"] = "Independent"
+    path = tmp_path / "party.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+    assert read_manifest(path)["races"][0]["candidates"][0]["partyLabel"] == "Independent"
+
+
+def test_manifest_rejects_a_declared_race_not_used_by_a_ballot(tmp_path: Path) -> None:
+    content = json.loads(fixture_path().read_text(encoding="utf-8"))
+    content["races"].append({
+        "key": "unused-race",
+        "office": {
+            "name": "Unused Office",
+            "governmentLevel": "local",
+            "jurisdictionName": "Example",
+        },
+        "ballotTitle": "Unused Office",
+        "candidates": [{"canonicalName": "Example Person"}],
+    })
+    path = tmp_path / "unused-race.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="every declared race"):
+        read_manifest(path)

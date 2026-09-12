@@ -116,31 +116,31 @@ class ResolutionPipeline:
         ):
             del address
             return NotAvailableResponse(
-                message="Ballot resolution is not configured for an active election. The submitted address was discarded."
+                message="We haven't connected an election for address lookup yet. Your address was not saved."
             )
         try:
             geocode = self.geocoder.geocode(address)
         except GeocoderError:
             return NotAvailableResponse(
-                message="The address provider is temporarily unavailable. The submitted address was discarded."
+                message="We couldn't reach the address lookup service. Please try again later. Your address was not saved."
             )
         finally:
             del address
 
         if geocode.status is GeocodeStatus.NOT_AVAILABLE:
             return NotAvailableResponse(
-                message="Address resolution is disabled. The submitted address was discarded."
+                message="Address lookup isn't available on this site yet. You can try browsing by area. Your address was not saved."
             )
         if geocode.status is GeocodeStatus.UNMATCHED:
             return NotFoundResponse(
                 reason_codes=["no_boundary_match"],
-                message="The address could not be located. No ballot was selected.",
+                message="We couldn't find that address. Check the spelling or try browsing by area. No ballot was selected.",
             )
         if geocode.status is GeocodeStatus.AMBIGUOUS:
             return NeedsReviewResponse(
                 confidence=0,
                 reason_codes=["low_geocode_confidence"],
-                message="The address provider returned multiple locations. No ballot was selected.",
+                message="That address could refer to more than one place. Please add the city and ZIP code. No ballot was selected.",
             )
         assert geocode.longitude is not None and geocode.latitude is not None
 
@@ -154,7 +154,7 @@ class ResolutionPipeline:
             (self.boundary_resolver, self.ballot_matcher, self.ballot_catalog)
         ):
             return NotAvailableResponse(
-                message="Ballot resolution is not configured for an active election. The submitted location was discarded."
+                message="We haven't connected an election for location lookup yet. Your location was not saved."
             )
         return self._resolve_point(
             longitude=longitude,
@@ -179,7 +179,7 @@ class ResolutionPipeline:
         if boundary_result.status is BoundaryResolutionStatus.NOT_FOUND:
             return NotFoundResponse(
                 reason_codes=["no_boundary_match"],
-                message="No verified boundary covered the resolved location. No ballot was selected.",
+                message="We found the location, but don't yet have checked district boundaries covering it. No ballot was selected.",
             )
 
         match = self.ballot_matcher.match(
@@ -192,15 +192,15 @@ class ResolutionPipeline:
             return NeedsReviewResponse(
                 confidence=0,
                 reason_codes=["ballot_data_unavailable"],
-                message="The location was resolved, but no published ballot combination matched it.",
+                message="We found the location, but don't have a published ballot matching its districts. No ballot was selected.",
             )
 
         choices = self.ballot_catalog.choices(match.ballot_version_ids)
         if len(choices) != len(match.ballot_version_ids):
-            return NotAvailableResponse(message="Published ballot evidence is incomplete. No ballot was selected.")
+            return NotAvailableResponse(message="Some sources needed to confirm this ballot are missing. No ballot was selected.")
         required_areas = self.ballot_catalog.required_area_ids(match.ballot_version_ids)
         if any(not required_areas.get(ballot_id) for ballot_id in match.ballot_version_ids):
-            return NotAvailableResponse(message="Published ballot geography is incomplete. No ballot was selected.")
+            return NotAvailableResponse(message="We don't have enough checked district information to confirm this ballot. No ballot was selected.")
 
         def support_for(ballot_id: UUID) -> list[GeographicSupport]:
             return [
@@ -221,7 +221,7 @@ class ResolutionPipeline:
             PlausibleBallot(
                 ballot=choices[ballot_id],
                 supported_by=support_for(ballot_id),
-                explanation="This ballot is supported by the listed verified geographic memberships.",
+                explanation="This ballot may apply because the location matches the checked areas listed below.",
             )
             for ballot_id in match.ballot_version_ids
         ]
@@ -233,7 +233,7 @@ class ResolutionPipeline:
                     if boundary_result.status is BoundaryResolutionStatus.AMBIGUOUS
                     else "boundary_source_conflict"
                 ],
-                message="The geographic evidence is uncertain. No ballot was selected.",
+                message="We can't confidently tell which districts apply to this location. No ballot was selected.",
                 plausible_ballots=plausible,
             )
         source_conflict = boundary_result.status is BoundaryResolutionStatus.SOURCE_CONFLICT
@@ -241,7 +241,7 @@ class ResolutionPipeline:
             status="source_conflict" if source_conflict else "ambiguous",
             confidence=0,
             reason_codes=["boundary_source_conflict" if source_conflict else "near_boundary"],
-            message="More than one ballot remains plausible. No ballot was preselected.",
+            message="More than one ballot could apply here. We haven't chosen one for you.",
             plausible_ballots=plausible,
         )
 
@@ -326,7 +326,7 @@ class SyntheticDemoResolutionPipeline:
                     area_type="municipality",
                     name="Synthetic City Area",
                     boundary_version_id=UUID("10000000-0000-0000-0000-000000000010"),
-                    explanation="Invented point-in-polygon match for interface review only.",
+                    explanation="In this invented example, the location falls inside the city boundary. This is not real election information.",
                     source=source,
                 ),
                 GeographicSupport(
@@ -334,7 +334,7 @@ class SyntheticDemoResolutionPipeline:
                     area_type="voting_precinct",
                     name="Synthetic Precinct 101",
                     boundary_version_id=UUID("10000000-0000-0000-0000-000000000011"),
-                    explanation="Invented precinct membership for interface review only.",
+                    explanation="In this invented example, the location falls in this voting precinct. This is not real election information.",
                     source=source,
                 ),
                 GeographicSupport(
@@ -342,7 +342,7 @@ class SyntheticDemoResolutionPipeline:
                     area_type="school_district",
                     name="Synthetic School District",
                     boundary_version_id=UUID("10000000-0000-0000-0000-000000000012"),
-                    explanation="Invented school-district membership for interface review only.",
+                    explanation="In this invented example, the location falls in this school district. This is not real election information.",
                     source=source,
                 ),
             ],
@@ -355,7 +355,7 @@ def _support(membership: BoundaryMembership) -> GeographicSupport:
         area_type=membership.area_type,
         name=membership.area_name,
         boundary_version_id=membership.boundary_version_id,
-        explanation=f"The resolved point is covered by {membership.area_name}.",
+        explanation=f"The location falls within {membership.area_name}, according to the boundary source below.",
         source=SourceCitation(
             authority_name=membership.authority_name,
             source_url=membership.source_url,

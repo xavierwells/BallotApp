@@ -6,7 +6,8 @@ This is a proposed operating cut line for the November 3, 2026 election. Texas e
 
 - Verified address-to-ballot resolution, including an honest unresolved state.
 - Official ballot versions, races, candidates, and propositions.
-- Two-person verification for published ballot items.
+- One authenticated human review for basic official-source facts; two distinct
+  humans for interview/interpretive material. Draft loading can precede review.
 - Candidate directory, standardized questionnaire/outreach tracking, sourced candidate facts, and transparent “information missing” states.
 - Neutral proposition explanations, voting logistics, official sources, and correction intake.
 
@@ -23,7 +24,7 @@ This is a proposed operating cut line for the November 3, 2026 election. Texas e
 | --- | --- |
 | Aug 19–28 | Provenance migration design, authorities/source registry, boundary-data acquisition, public-page foundation. |
 | Aug 29–Sep 11 | Official ballot acquisition/parsing, provisional candidate directory, begin standardized outreach in parallel with ballot verification. |
-| Sep 12–25 | Two-person ballot verification, candidate questionnaire follow-ups, proposition and office explanations. |
+| Sep 12–25 | Official-fact review, additional reviewers for interpretive material, candidate questionnaire follow-ups, proposition and office explanations. |
 | Sep 26–Oct 9 | Public beta, corrections workflow, complete voting-logistics integration, daily ballot/source checks. |
 | Oct 10–18 | Launch readiness, accessibility/performance review, daily verification and unresolved-boundary handling. |
 | Oct 19–Nov 3 | Election mode: multiple daily checks for logistics/ballot changes and rapid corrections. |

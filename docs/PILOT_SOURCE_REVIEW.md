@@ -22,6 +22,21 @@ accepted artifact privately as provenance evidence. That policy does not
 override source terms: public presentation remains `metadata_only` unless the
 review finds explicit public-display or redistribution rights.
 
+### Proportionate official-fact exception (2026-09-11)
+
+The product owner approved moving forward with low-frequency retrieval of an
+unrestricted official election document when needed to extract public election
+facts. This narrow risk decision permits a checksum-pinned private evidentiary
+copy and publication of attributed facts/metadata. It does not permit public
+mirroring of the source, expressive reuse, candidate-application PII, bypassing
+access controls, bulk crawling, or scheduled automation. The source registry
+must not be broadened beyond the specific reviewed document and use.
+
+The first use is the Texas SOS 2026 ballot certification described in
+`CANDIDATE_CERTIFICATION_STAGING.md`. The PDF remains uncommitted and its staged
+facts remain non-public until the evidence model and second-person review are
+complete.
+
 ## Research matrix
 
 | Authority / source | Ownership and current-use evidence | Terms or rights evidence found | Draft disposition |

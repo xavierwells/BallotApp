@@ -93,12 +93,14 @@ def read_manifest(path: Path) -> dict[str, Any]:
         for candidate in candidates:
             if not isinstance(candidate, dict):
                 raise ValueError(f"race {key} candidates must be objects")
-            _only(candidate, {"canonicalName", "ballotLabel"}, f"race {key} candidate")
+            _only(candidate, {"canonicalName", "ballotLabel", "partyLabel"}, f"race {key} candidate")
             name = _nonempty(candidate.get("canonicalName"), f"race {key} candidate canonicalName", 255)
             if name.casefold() in names:
                 raise ValueError(f"race {key} has a duplicate candidate name")
             names.add(name.casefold())
             _nonempty(candidate.get("ballotLabel", name), f"race {key} candidate ballotLabel", 255)
+            if candidate.get("partyLabel") is not None:
+                _nonempty(candidate["partyLabel"], f"race {key} candidate partyLabel", 80)
 
     proposition_keys: set[str] = set()
     for proposition in propositions:
@@ -111,6 +113,8 @@ def read_manifest(path: Path) -> dict[str, Any]:
             _nonempty(proposition.get(field), f"proposition {key} {field}", 20_000)
 
     ballot_ids: set[str] = set()
+    referenced_races: set[str] = set()
+    referenced_propositions: set[str] = set()
     for ballot in ballots:
         identifier = _key(ballot.get("externalIdentifier") if isinstance(ballot, dict) else None, "ballot externalIdentifier")
         if identifier in ballot_ids:
@@ -131,8 +135,12 @@ def read_manifest(path: Path) -> dict[str, Any]:
             key = item.get("key")
             if item_type == "race" and key not in race_keys:
                 raise ValueError(f"ballot {identifier} references unknown race {key!r}")
+            if item_type == "race":
+                referenced_races.add(key)
             if item_type == "proposition" and key not in proposition_keys:
                 raise ValueError(f"ballot {identifier} references unknown proposition {key!r}")
+            if item_type == "proposition":
+                referenced_propositions.add(key)
             if item_type not in {"race", "proposition"}:
                 raise ValueError(f"ballot {identifier} has unsupported item type")
             _nonempty(item.get("sourcePage"), f"ballot {identifier} item sourcePage", 80)
@@ -148,6 +156,10 @@ def read_manifest(path: Path) -> dict[str, Any]:
                 raise ValueError(f"ballot {identifier} has a duplicate geographic requirement")
             pairs.add(pair)
             _nonempty(requirement.get("verifiedByReference"), "verifiedByReference", 128)
+    if referenced_races != race_keys:
+        raise ValueError("every declared race must appear in at least one ballot version")
+    if referenced_propositions != proposition_keys:
+        raise ValueError("every declared proposition must appear in at least one ballot version")
     return manifest
 
 
@@ -182,9 +194,11 @@ def apply_manifest(manifest: dict[str, Any]) -> dict[str, int]:
             "AND jurisdiction_name=:j AND election_date=:d AND election_type=:t LIMIT 1"
         ), {"p": publication_id, "a": election["authorityName"], "j": election["jurisdictionName"],
             "d": date.fromisoformat(election["electionDate"]), "t": election["electionType"], "doc": document_id}).scalar_one()
-        existing_doc = connection.execute(text("SELECT official_document_id FROM elections WHERE id=:id"), {"id": election_id}).scalar_one()
-        if existing_doc != document_id:
-            raise ValueError("existing election differs from the pinned source document")
+        connection.execute(text(
+            "INSERT INTO election_source_citations (id,publication_id,election_id,document_id,evidence_role) "
+            "VALUES (gen_random_uuid(),:p,:e,:doc,'official_ballot') "
+            "ON CONFLICT ON CONSTRAINT uq_election_source_citation DO NOTHING"
+        ), {"p": publication_id, "e": election_id, "doc": document_id})
 
         race_ids: dict[str, Any] = {}
         for race in manifest["races"]:
@@ -207,12 +221,25 @@ def apply_manifest(manifest: dict[str, Any]) -> dict[str, int]:
             counts["races"] += 1
             for candidate in race["candidates"]:
                 candidate_id = connection.execute(text(
-                    "WITH inserted AS (INSERT INTO candidates (id,publication_id,race_id,candidate_document_id,canonical_name,ballot_label) "
-                    "VALUES (gen_random_uuid(),:p,:r,:doc,:name,:label) ON CONFLICT ON CONSTRAINT uq_candidates_race_canonical_name DO NOTHING RETURNING id) "
+                    "WITH inserted AS (INSERT INTO candidates (id,publication_id,race_id,candidate_document_id,canonical_name,ballot_label,party_label) "
+                    "VALUES (gen_random_uuid(),:p,:r,:doc,:name,:label,:party) ON CONFLICT ON CONSTRAINT uq_candidates_race_canonical_name DO NOTHING RETURNING id) "
                     "SELECT id FROM inserted UNION ALL SELECT id FROM candidates WHERE race_id=:r AND canonical_name=:name LIMIT 1"
-                ), {"p": publication_id, "r": race_id, "doc": document_id, "name": candidate["canonicalName"], "label": candidate.get("ballotLabel", candidate["canonicalName"])}).scalar_one()
-                candidate_row = connection.execute(text("SELECT candidate_document_id,ballot_label FROM candidates WHERE id=:id"), {"id": candidate_id}).mappings().one()
-                _same(candidate_row, {"candidate_document_id": document_id, "ballot_label": candidate.get("ballotLabel", candidate["canonicalName"])}, "candidate")
+                ), {"p": publication_id, "r": race_id, "doc": document_id, "name": candidate["canonicalName"],
+                    "label": candidate.get("ballotLabel", candidate["canonicalName"]), "party": candidate.get("partyLabel")}).scalar_one()
+                candidate_row = connection.execute(text("SELECT ballot_label,party_label FROM candidates WHERE id=:id"), {"id": candidate_id}).mappings().one()
+                expected_candidate = {"ballot_label": candidate.get("ballotLabel", candidate["canonicalName"])}
+                if candidate.get("partyLabel") is not None:
+                    expected_candidate["party_label"] = candidate["partyLabel"]
+                _same(candidate_row, expected_candidate, "candidate")
+                source_page = next(
+                    item["sourcePage"] for ballot in manifest["ballotVersions"] for item in ballot["items"]
+                    if item["type"] == "race" and item["key"] == race["key"]
+                )
+                connection.execute(text(
+                    "INSERT INTO candidate_source_citations (id,publication_id,candidate_id,document_id,source_page,evidence_role) "
+                    "VALUES (gen_random_uuid(),:p,:candidate,:doc,:page,'official_ballot') "
+                    "ON CONFLICT ON CONSTRAINT uq_candidate_source_citation DO NOTHING"
+                ), {"p": publication_id, "candidate": candidate_id, "doc": document_id, "page": source_page})
                 counts["candidates"] += 1
             candidate_count = connection.execute(text("SELECT COUNT(*) FROM candidates WHERE race_id=:r"), {"r": race_id}).scalar_one()
             if candidate_count != len(race["candidates"]):

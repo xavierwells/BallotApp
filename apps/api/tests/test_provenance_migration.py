@@ -54,7 +54,8 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'verification_cadence_policies', 'source_verification_checks', 'source_alerts', "
                     "'geographic_areas', 'boundary_datasets', 'boundary_versions', "
                     "'ballot_geographic_requirements', 'browse_areas', "
-                    "'browse_coverage_estimates', 'browse_coverage_evidence')"
+                    "'browse_coverage_estimates', 'browse_coverage_evidence', "
+                    "'candidate_source_citations', 'election_source_citations')"
                 )
             )
         }
@@ -88,7 +89,8 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
                     "'ballot_items_final_immutable', "
                     "'ballot_versions_require_complete_content', "
                     "'browse_areas_final_immutable', 'browse_estimates_final_immutable', "
-                    "'browse_evidence_final_immutable')"
+                    "'browse_evidence_final_immutable', "
+                    "'candidate_source_citations_immutable', 'election_source_citations_immutable')"
                 )
             )
         }
@@ -129,9 +131,9 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
             )
         ).mappings().one()
 
-    assert len(tables) == 24
+    assert len(tables) == 26
     assert {"draft", "verified", "published", "retracted", "superseded"} <= claim_statuses
-    assert len(trigger_names) == 18
+    assert len(trigger_names) == 20
     assert postgis_version
     assert boundary_geometry == {"type": "MULTIPOLYGON", "srid": 4326}
     assert browse_geometry == {"type": "MULTIPOLYGON", "srid": 4326}
@@ -199,9 +201,9 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
         connection.execute(
             text(
                 "INSERT INTO documents "
-                "(id, publication_id, source_type, title, publisher_name, source_url, checksum_sha256, retrieved_at) "
+                "(id, publication_id, source_type, title, publisher_name, source_url, checksum_sha256, retrieved_at, is_authoritative) "
                 "VALUES (:id, :publication_id, 'official_document', 'Test source', "
-                "'Test authority', 'https://example.test/source', :checksum, CURRENT_TIMESTAMP)"
+                "'Test authority', 'https://example.test/source', :checksum, CURRENT_TIMESTAMP, TRUE)"
             ),
             {"id": document_id, "publication_id": publication_id, "checksum": "a" * 64},
         )
@@ -348,16 +350,20 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
             {"publication_id": publication_id, "ballot_id": ballot_version_id,
              "proposition_id": proposition_id},
         )
-        for reviewer in ("synthetic-verifier-one", "synthetic-verifier-two"):
-            connection.execute(
-                text(
-                    "INSERT INTO verification_events "
-                    "(id, publication_id, action, target_type, target_id, actor_reference, actor_role) "
-                    "VALUES (gen_random_uuid(), :publication_id, 'verified', 'ballot_version', "
-                    ":ballot_id, :reviewer, 'verifier')"
-                ),
-                {"publication_id": publication_id, "ballot_id": ballot_version_id, "reviewer": reviewer},
-            )
+        reviewer = f"synthetic-reviewer-{test_suffix}"
+        staff_id = str(uuid4())
+        connection.execute(text(
+            "INSERT INTO editorial_users(id,publication_id,username,password_hash) VALUES(:id,:p,:u,'disabled-test-login')"
+        ), {"id": staff_id, "p": publication_id, "u": reviewer})
+        connection.execute(
+            text(
+                "INSERT INTO verification_events "
+                "(id, publication_id, action, target_type, target_id, actor_reference, actor_role, editorial_user_id, review_fingerprint) "
+                "VALUES (gen_random_uuid(), :publication_id, 'verified', 'ballot_version', "
+                ":ballot_id, :reviewer, 'verifier', :staff, editorial_target_fingerprint('ballot_version',:ballot_id))"
+            ),
+            {"publication_id": publication_id, "ballot_id": ballot_version_id, "reviewer": reviewer, "staff": staff_id},
+        )
         connection.execute(
             text(
                 "UPDATE ballot_versions SET status = 'published', published_at = CURRENT_TIMESTAMP "
@@ -390,16 +396,29 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
             "INSERT INTO ballot_items (id,publication_id,ballot_version_id,proposition_id,sequence,source_page) "
             "VALUES (gen_random_uuid(),:p,:b,:q,1,'1')"
         ), {"p": publication_id, "b": one_review_ballot_id, "q": proposition_id})
-        connection.execute(text(
-            "INSERT INTO verification_events (id,publication_id,action,target_type,target_id,actor_reference,actor_role) "
-            "VALUES (gen_random_uuid(),:p,'verified','ballot_version',:b,'only-one-verifier','verifier')"
-        ), {"p": publication_id, "b": one_review_ballot_id})
+    with pytest.raises(DatabaseError, match="active authenticated editorial identity"):
+        with engine.begin() as connection:
+            connection.execute(text(
+                "INSERT INTO verification_events (id,publication_id,action,target_type,target_id,actor_reference,actor_role) "
+                "VALUES (gen_random_uuid(),:p,'verified','ballot_version',:b,'free-text-verifier','verifier')"
+            ), {"p": publication_id, "b": one_review_ballot_id})
 
-    with pytest.raises(DatabaseError, match="two distinct reviewers"):
+    with pytest.raises(DatabaseError, match="one authenticated review"):
         with engine.begin() as connection:
             connection.execute(text(
                 "UPDATE ballot_versions SET status='published',published_at=CURRENT_TIMESTAMP WHERE id=:id"
             ), {"id": one_review_ballot_id})
+
+    with engine.begin() as connection:
+        connection.execute(text(
+            "INSERT INTO verification_events (id,publication_id,action,target_type,target_id,actor_reference,actor_role,editorial_user_id,review_fingerprint) "
+            "VALUES(gen_random_uuid(),:p,'verified','ballot_version',:b,:u,'verifier',:staff,editorial_target_fingerprint('ballot_version',:b))"
+        ), {"p": publication_id, "b": one_review_ballot_id, "u": reviewer, "staff": staff_id})
+        connection.execute(text("UPDATE ballot_items SET source_page='2' WHERE ballot_version_id=:b"), {"b": one_review_ballot_id})
+    with pytest.raises(DatabaseError, match="current content"):
+        with engine.begin() as connection:
+            connection.execute(text("UPDATE ballot_versions SET status='published',published_at=CURRENT_TIMESTAMP WHERE id=:b"),
+                               {"b": one_review_ballot_id})
 
     unmapped_ballot_id = str(uuid4())
     with engine.begin() as connection:
@@ -418,7 +437,7 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
             },
         )
 
-    with pytest.raises(DatabaseError, match="must have geographic requirements"):
+    with pytest.raises(DatabaseError, match="must have geographic requirements|must have items"):
         with engine.begin() as connection:
             connection.execute(
                 text(
@@ -637,15 +656,17 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
         connection.execute(
             text(
                 "INSERT INTO verification_events "
-                "(id, publication_id, source_claim_id, action, target_type, target_id, actor_reference, actor_role) "
-                "VALUES (:id, :publication_id, :source_claim_id, 'published', 'source_claim', :target_id, "
-                "'test-publisher', 'publisher')"
+                "(id, publication_id, source_claim_id, action, target_type, target_id, actor_reference, actor_role, editorial_user_id, review_fingerprint) "
+                "VALUES (:id, :publication_id, :source_claim_id, 'verified', 'source_claim', :target_id, "
+                ":reviewer, 'verifier', :staff, editorial_target_fingerprint('source_claim',:target_id))"
             ),
             {
                 "id": str(uuid4()),
                 "publication_id": publication_id,
                 "source_claim_id": published_claim_id,
                 "target_id": published_claim_id,
+                "reviewer": reviewer,
+                "staff": staff_id,
             },
         )
 

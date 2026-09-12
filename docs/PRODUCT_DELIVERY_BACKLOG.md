@@ -2,6 +2,19 @@
 
 This document is the delivery plan for the Copperas Cove 2026 pilot and the path from that pilot to a reusable, multi-tenant civic-information platform. It is deliberately ordered: an epic is not started simply because it is attractive; it starts when its dependencies and acceptance criteria are met.
 
+**Latest checkpoint:** operator confirmed `85 passed, 10 warnings` and successful
+setup of three private county review tasks under migrations 015–016. The pinned
+private certification is retained. The owner approved one human review for
+official facts and two for interpretive material. Migrations 017–018 and the updated
+UI implement per-section Accept/Flag, individual notes, typed transcription
+corrections, one master submission, and preserved reviews of unchanged sections.
+Shared state/federal race content can reuse a human review from another county,
+with a separate county-source confirmation and immutable import receipt.
+Local checks: 142 API tests passed (13 database tests skipped), five frontend
+tests passed, production web build and mocked browser flows passed. Migration
+018's database execution, updated UI acceptance and actual content review still
+need operator confirmation. Epic 3's data dependencies remain open.
+
 ## Product outcomes
 
 1. A voter can enter an address and see only the ballot items that reliably apply to them.
@@ -148,11 +161,13 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [ ] Implement non-personalized ballot browsing by ZIP code, city, and county; label results as selectable area matches rather than exact voter matches. The API service, validation, synthetic fixtures, responsive web presentation, sourced ranking contract, migration `012`, fail-closed promotion command, and publication-scoped database reader are implemented. The pinned 76522 calculation was imported on 2026-08-20 as draft evidence: Coryell 38,975/41,123 (94.78%) and Lampasas 2,148/41,123 (5.22%). Operator promotion/enablement, city/county indexes, and real verified-ballot lookup remain.
 - [x] For unresolved addresses, return and display the evidence-backed plausible ballot set with geographic explanations, source citations, and no preselected winner. The comparison UI labels every choice as possible, explains the unresolved reason, and provides no selection control.
 - [x] Match resolved jurisdiction memberships to verified official ballot styles/versions. Ballot versions now carry an immutable, source-backed combination of geographic requirements; all requirements must match, and zero/multiple results never choose a winner.
-- [x] Add a controlled official-ballot manifest and draft importer. It requires an already-registered authoritative document, page citations, stable keys, verified geographic requirements, idempotent drift checks, and can never publish. Migration `013` requires cited items and two distinct verifier events before publication.
+- [x] Add a controlled official-ballot manifest and draft importer. It requires an already-registered authoritative document, page citations, stable keys, verified geographic requirements, idempotent drift checks, and can never publish. Migration 013's blanket two-reference publication rule is superseded by migration 016's authenticated, current-content review policy.
 - [x] Create synthetic address and boundary-edge test fixtures; never use real voter data. Geocoder, boundary importer, exact-edge, overlap-conflict, and no-match cases use invented examples only.
 - [x] Add opt-in browser location resolution with a registered-home warning, request-only coordinates, accuracy-aware boundary ambiguity, and sanitized API validation.
 - [ ] Add search-as-you-type address suggestions only after a provider or self-hosted dataset passes privacy, license, cost, retention, and operational review. Native browser saved-address autofill remains enabled in the interim.
 - [ ] Add daily verification of current ballot versions during the active election period.
+- [x] Checksum-pin and stage the Texas SOS final 2026 candidate certification for Bell, Coryell, and Lampasas Counties. The 2026-09-11 snapshots contain 108 race inventories and 216 candidate/party labels with report-page citations; they create no ballot applicability claims or publication.
+- [x] Verify migration 014 and retrieve the pinned certification to private local storage through the one-shot `source-fetch` service. Operator confirmed both successfully; this does not record source approval, document registration, or human sign-off.
 
 ### Decision checkpoints
 
@@ -177,26 +192,39 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 - As a researcher, I can create a candidate, attach sources, record outreach, and see what information is missing.
 - As a verifier, I can independently compare each ballot item against the official document before publication.
+- As a verifier, I can review a readable page or county section beside its source, save progress, and record one decision covering the facts I actually checked without editing JSON or running commands.
 - As a candidate, I can submit a standardized response and request a factual correction without controlling editorial treatment.
 - As an editor, I can distinguish candidate-provided statements from independently verified facts.
 
 ### Tasks
 
+- [x] Document the implemented review workflow and limitations in [`EDITORIAL_VERIFICATION_WORKFLOW.md`](EDITORIAL_VERIFICATION_WORKFLOW.md).
+- [x] Repair document registration (`publications.id`), require active retention approval before storage, and reuse the downloaded PDF. Operator confirmed the database tests and setup of three private county batches.
+- [x] Add versioned private review batches and `/editorial` source/table comparison for Bell, Coryell and Lampasas; one setup command provisions local staff access and unreviewed intake.
+- [x] Add section decisions, saved progress, flags and immutable per-race coverage. Each section has Accept/Flag and its own notes, saved by one master submission. No automatic verification or publication.
+- [x] Add in-browser office/name/party transcription corrections and carry forward unchanged section reviews with identical source/context. Original text and correction history remain; changed sections need later acceptance. Migration 017 and tests are implemented; database/operator execution remains pending.
+- [x] Reuse exact shared state/federal race content reviews across county tasks without recording duplicate/fake human decisions. Keep county coverage separate; migration 018 retains the import review basis. Identity/content, distinct-human, flag, stale-evidence and receipt tests are implemented; database/operator execution remains pending. See [`SHARED_RACE_REVIEW.md`](SHARED_RACE_REVIEW.md).
+- [ ] Extend shared review to cross-county local authorities once stable authority identifiers are available; ambiguous local office names remain county-scoped.
+- [ ] Add controlled corrections/supersession of already imported canonical records. Conflicts still stop import; browser corrections only change private unimported drafts.
+- [x] Add provisioned, publication-scoped staff accounts, hashed sessions, origin protection, private PDFs and documented/tested review APIs without new runtime dependencies.
 - [ ] Build authenticated editorial roles: researcher, verifier, editor, publisher, administrator.
 - [ ] Build candidate, office, race, proposition, and questionnaire editorial forms on top of the provenance schema.
 - [ ] Add candidate outreach templates, deadlines, reminders, and immutable communication log.
 - [ ] Add research-task queues driven by missing evidence, verification state, election urgency, and overdue-source alerts; make the editorial dashboard the default alert destination.
 - [ ] Add an explicit boundary source-conflict queue and resolution workflow. Editors must be able to compare conflicting versions, record the disposition, and publish a superseding version without deleting the conflicting evidence.
 - [ ] Add editor-controlled, opt-in email preferences for alerts they are authorized to view; keep any ticketing adapter disabled until a provider and disclosure review are approved.
-- [ ] Add two-person ballot verification workflow and publication gate.
+- [x] Update database gates: one active authenticated reviewer for official ballots/basic official facts, two distinct humans for candidate statements and interpretive claims; bind approvals to current content. Operator confirmed the 85-test database run under migrations 015–016.
+- [ ] Add ballot-style and general claim review/publication screens. The certification UI imports unpublished facts only; it cannot publish ballots or interviews.
 - [ ] Add candidate correction requests and public correction-log workflow.
 - [ ] Add manual import tools for ballot PDF text/OCR drafts; require human verification before publication.
 
 ### Decision checkpoints
 
-- [ ] Decide and document how two-person verification is enforced. Before publication features ship, introduce authenticated editorial identities and require two distinct reviewers, neither of whom authored the claim; decide whether this is enforced by PostgreSQL, the workflow service, or both.
+- [x] Owner approved risk-based review: one human may verify basic official facts (including AI transcription); two distinct human reviewers total for interviews/statements/interpretive work. AI never counts. This supersedes the author-plus-two ambiguity.
+- [x] Implement authenticated identity and version-bound evidence in the workflow and PostgreSQL. Free-text references no longer satisfy ballot/claim publication gates; run the isolated integration suite before deployment acceptance.
+- [x] Owner approved private unreviewed staging before canonical promotion. Local provisioned staff accounts use existing Python/PostgreSQL; no external identity provider. Certification `--apply` now requires the same recorded reviews as the UI.
 - [ ] Decide how polymorphic claim/event subjects are validated before editorial forms can write them. Confirm whether a database trigger, a constrained application service with integrity tests, or a hybrid is required to ensure each `subject_id`/`target_id` exists for its declared type.
-- [ ] Resolve whether `candidates.candidate_document_id` remains mandatory or becomes nullable for provisional candidate-directory entries. Define the minimum evidence and visible incomplete state before candidate-creation forms ship.
+- [x] Replace the single-source candidacy assumption before promoting the staged Texas certification. Migration `014_candidate_sources` preserves multiple immutable, tenant-scoped election/candidacy citations and places party label on the election-specific candidacy; certification-only records remain draft and incomplete until joined to verified ballot styles.
 
 ### Exit criteria
 
@@ -300,4 +328,19 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ## Priority now
 
-Epics 0–2 are complete for the direct-link/manual-check initial-launch policy. **Epic 3 is active**: its PostGIS/versioned-boundary foundation, optional ephemeral geocoder, controlled boundary and official-ballot draft importers, self-owned jurisdiction resolver, and reviewed ZIP browse evidence are implemented; authoritative November boundaries and real official ballot manifests remain open.
+Epics 0–2 are complete for the initial-launch policy. **Epic 3 remains active**:
+its resolver and import foundations are implemented, while authoritative
+November boundaries, fully verified local contests, and exact ballot styles
+remain open. The private certification download and registration have succeeded,
+and three county review batches are loaded. Completed human review and canonical
+promotion have not been reported.
+
+**Next: exercise the new Epic 4 workspace with the real private certification.**
+Run the isolated database tests, back up, rebuild/apply migration 018, then
+continue the existing county tasks at `/editorial`; no repeat setup/download is
+needed. Exercise a section flag/correction and subsequent acceptance against
+the real PDF, confirm shared content appears in another county, then perform its
+separate county-source confirmation before import. Next build the publication
+handoff; do not treat certification review as ballot applicability. Canonical
+correction/supersession is separate follow-up work, not a silent overwrite.
+See [`EDITORIAL_VERIFICATION_WORKFLOW.md`](EDITORIAL_VERIFICATION_WORKFLOW.md).

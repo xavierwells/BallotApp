@@ -82,6 +82,20 @@ individual to material legal or civil harm.
 - Preserve original public documents and page-level citations where permitted.
 - AI output is a research draft, never an authority or publish trigger.
 - Separate fact, candidate statement, editorial analysis, and community tip in both data and UI.
+- Initial source-backed data may load as private, unreviewed drafts. Import and
+  storage do not constitute approval or public publication.
+- For the pilot, basic official-source facts require one authenticated human
+  review of the current content. Interviews, candidate statements and
+  interpretive material require two distinct human reviewers. This replaces
+  the earlier blanket two-reviewer policy; AI never counts as a reviewer.
+- Never attribute an AI/automated check to a human staff username. A human may
+  approve after review; delegating extraction does not constitute that review.
+- Reuse a human's shared-race content review only with matching scoped identity,
+  source and content. Preserve the actual reviewer/page, count each human once,
+  and keep county-source coverage separate from ballot/voter applicability.
+- Reviews must identify their exact content revision and scope. Changed content
+  needs renewed review. Conflicting source evidence and uncertain ballot
+  applicability cannot be cleared merely by adding reviewer signatures.
 
 ## Operational security
 

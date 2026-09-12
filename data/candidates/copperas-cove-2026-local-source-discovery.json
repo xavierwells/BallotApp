@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "status": "source_discovery_only",
+  "retrievedAt": "2026-09-11",
+  "warning": "This file identifies official contest and filing evidence. It is not a candidate certification or ballot and must not be promoted automatically.",
+  "city": {
+    "authority": "City of Copperas Cove",
+    "electionDate": "2026-11-03",
+    "electionPage": "https://www.copperascovetx.gov/188/Election-Information",
+    "drawingDocument": {
+      "sourceUrl": "https://www.copperascovetx.gov/DocumentCenter/View/6879/Notice-of-Drawing-for-Place-on-the-Ballot-for-Nov-3-2026",
+      "checksumSha256": "d9fb4a811cce52d2f44bef673b4d2ffd3ad4b72b907a0644c06abd87bf070442",
+      "contentLengthBytes": 39188,
+      "extractionStatus": "image-only document; visual transcription and independent review required"
+    },
+    "confirmedContests": ["City Council Place 6", "City Council Place 7"],
+    "candidateStatus": "not transcribed"
+  },
+  "schoolDistrict": {
+    "authority": "Copperas Cove Independent School District",
+    "electionDate": "2026-11-03",
+    "electionPage": "https://www.ccisd.com/page/election-2026",
+    "filingPage": "https://www.ccisd.com/apps/pages/index.jsp?pREC_ID=2757761&type=d&uREC_ID=4477461",
+    "confirmedRegularContests": ["Board of Trustees Place 6", "Board of Trustees Place 7"],
+    "possibleSpecialContest": {
+      "name": "Board of Trustees Place 5 (unexpired term)",
+      "status": "board page says a November 2026 special election will fill the remainder; official ballot confirmation required"
+    },
+    "applicationNamesObserved": ["Inez Faizon", "Jeff Gorres", "Emily Urquidez", "Trang Nguyen", "James Ortiz", "JC Stubbs"],
+    "candidateStatus": "application presence only; place assignment, eligibility, withdrawal status, spelling, and ballot order require official verification",
+    "privacy": "No application documents, signatures, addresses, phone numbers, email addresses, or other filing PII were retained."
+  }
+}

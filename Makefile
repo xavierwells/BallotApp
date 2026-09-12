@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help up down api-test dependency-check db-upgrade
+.PHONY: help up down api-test api-integration-test dependency-check db-upgrade
 
 help:
 	@echo "up       Start the local stack"
@@ -18,6 +18,9 @@ down:
 api-test:
 	docker build --target test -t ballot-api-test ./apps/api
 	docker run --rm --mount type=bind,source="$(CURDIR)/data",target=/app/data,readonly ballot-api-test
+
+api-integration-test:
+	docker compose --profile tests run --build --rm api-test
 
 db-upgrade:
 	docker compose run --rm migrate

@@ -1,0 +1,56 @@
+.workspace { max-width: 1600px; margin: auto; padding: 2rem; }
+.workspace h1 { font-size: clamp(2rem, 4vw, 3rem); }
+.workspace a { color: var(--blue); }
+.workspace button:disabled { cursor: not-allowed; }
+.workspace :focus-visible { outline: 3px solid #b87500; outline-offset: 3px; }
+.header, .batchHeader, .raceHeader, .selection { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
+.header { border-bottom: 1px solid #c9d7e3; margin-bottom: 1.5rem; padding-bottom: 1rem; }
+.account { display: flex; gap: 1rem; align-items: center; flex-shrink: 0; }
+.login { background: white; border: 1px solid #c9d7e3; border-radius: .5rem; padding: 2rem; max-width: 28rem; margin: 3rem auto; }
+.login input { display: block; width: 100%; margin-bottom: 1.25rem; }
+.login button { width: 100%; }
+.queue { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.task { background: white; color: var(--ink); border: 1px solid #b6c9d9; text-align: left; padding: 1.25rem; }
+.task span { display: block; font-size: .9rem; font-weight: 400; margin-top: .6rem; }
+.task strong { font-size: 1.2rem; }
+.active { border: 2px solid var(--blue); box-shadow: inset 0 4px var(--blue); }
+.badge { display: inline-block; background: #e7eef5; padding: .35rem .6rem; border-radius: .25rem; font-size: .8rem; white-space: nowrap; }
+.scope { background: #fff7df; border-left: 4px solid var(--gold); padding: 1rem; line-height: 1.5; }
+.pages, .buttons { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
+.secondary { background: white; color: var(--blue); border: 1px solid var(--blue); }
+.comparison { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(380px, 1fr); gap: 1.5rem; align-items: start; }
+.evidence { position: sticky; top: 1rem; }
+.evidence iframe { width: 100%; height: 72vh; border: 1px solid #bcccdc; background: white; }
+.race { margin: 1rem 0; padding: 1rem; background: white; border: 1px solid #c9d7e3; border-radius: .35rem; }
+.raceHeader { justify-content: flex-start; }
+.raceHeader h4 { margin: 0; flex: 1; }
+.workspace input[type="radio"] { flex: none; width: 1.2rem; height: 1.2rem; margin: 0; padding: 0; accent-color: var(--blue); }
+.workspace table { width: 100%; border-collapse: collapse; text-align: left; }
+.workspace td, .workspace th { border-bottom: 1px solid #e1e8ef; padding: .7rem .4rem; }
+.workspace th { font-size: .85rem; color: #486581; }
+.small { font-size: .85rem; line-height: 1.5; color: #486581; }
+.actions { border: 1px solid #829ab1; padding: 1rem; border-radius: .3rem; }
+.sectionDecision { border: 0; padding: 0; margin: 1rem 0; min-width: 0; }
+.sectionDecision legend { font-size: .85rem; font-weight: 700; margin-bottom: .65rem; }
+.choices { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.choices label { display: flex; align-items: center; gap: .5rem; border: 1px solid #829ab1; padding: .65rem .9rem; border-radius: .3rem; margin: 0; cursor: pointer; }
+.choices label:has(input:checked) { background: #eef6fc; border-color: var(--blue); }
+.flagDetails { margin-top: 1rem; border-left: 3px solid var(--gold); padding-left: .85rem; }
+.flagDetails textarea { width: 100%; border: 1px solid #829ab1; border-radius: .3rem; font: inherit; padding: .65rem; }
+.correctionFields { margin-top: 1rem; }
+.correctionFields input, .correctionFields select { display: block; width: 100%; margin-bottom: .85rem; }
+.candidateCorrection { border-top: 1px solid #c9d7e3; margin-top: 1rem; padding-top: 1rem; }
+.original { font-size: .85rem; color: #486581; margin: -.2rem 0 .5rem; overflow-wrap: anywhere; }
+.history { border-top: 1px solid #c9d7e3; padding-top: .75rem; }
+.history summary { cursor: pointer; font-size: .85rem; }
+.history ins { text-decoration: none; background: #e8f5ec; }
+.pending { background: #fff7df; border-left: 4px solid var(--gold); padding: .9rem 1rem; }
+.import { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin: 2rem 0; border-top: 1px solid #c9d7e3; padding-top: 1rem; }
+.error { background: #fff1f0; border-left: 4px solid #a61b1b; padding: 1rem; }
+.notice { background: #e8f5ec; border-left: 4px solid #267b43; padding: 1rem; }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+@media(max-width: 1000px) { .comparison { grid-template-columns: 1fr; } .evidence { position: static; } .evidence iframe { height: 50vh; } }
+@media(max-width: 650px) { .workspace { padding: 1rem; } .header, .account, .import, .selection { flex-direction: column; align-items: stretch; } .queue { grid-template-columns: 1fr; } .raceHeader { flex-wrap: wrap; } }
+.sharedReview { margin: 1rem 0; padding: 1rem; border-left: 4px solid #145588; background: #eef6fc; }
+.countyConfirmation { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem; border: 1px solid #9eb6cf; flex-basis: 100%; }
+.countyConfirmation input { width: 1.25rem; height: 1.25rem; flex: 0 0 auto; margin-top: .2rem; }

@@ -1,0 +1,646 @@
+{
+  "schemaVersion": 1,
+  "status": "staged",
+  "organizationSlug": "whats-on-my-ballot",
+  "publicationSlug": "copperas-cove",
+  "sourceDocument": {
+    "title": "2026 Ballot Certification",
+    "publisherName": "Texas Secretary of State, Elections Division",
+    "sourceUrl": "https://www.sos.state.tx.us/elections/forms/2026-ballot-cert.pdf",
+    "checksumSha256": "c13ffb4ebeee389fa9818d47b31f77b4e260ea6e6f5389cb7bf0f36d9b44d87c",
+    "contentLengthBytes": 5919631,
+    "publishedAt": "2026-08-28",
+    "retrievedAt": "2026-09-11",
+    "retention": "source-not-committed; retrieve by URL and verify checksum before private intake",
+    "publicAccess": "metadata_only"
+  },
+  "election": {
+    "name": "2026 November General Election",
+    "authorityName": "Lampasas County Elections",
+    "date": "2026-11-03",
+    "type": "general"
+  },
+  "county": "Lampasas County",
+  "races": [
+    {
+      "key": "us-senator",
+      "ballotTitle": "U. S. Senator",
+      "governmentLevel": "federal",
+      "jurisdictionName": "Texas",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "783",
+      "candidates": [
+        {
+          "ballotLabel": "KEN PAXTON",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "JAMES TALARICO",
+          "partyLabel": "Democratic"
+        },
+        {
+          "ballotLabel": "TED BROWN",
+          "partyLabel": "Libertarian"
+        }
+      ]
+    },
+    {
+      "key": "us-representative-district-31",
+      "ballotTitle": "U. S. Representative District 31",
+      "governmentLevel": "federal",
+      "jurisdictionName": "Congressional District 31",
+      "districtLabel": "District 31",
+      "seatsAvailable": 1,
+      "sourcePage": "783",
+      "candidates": [
+        {
+          "ballotLabel": "JOHN CARTER",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "JUSTIN EARLY",
+          "partyLabel": "Democratic"
+        },
+        {
+          "ballotLabel": "GREG STOKER",
+          "partyLabel": "Green"
+        }
+      ]
+    },
+    {
+      "key": "governor",
+      "ballotTitle": "Governor",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "783",
+      "candidates": [
+        {
+          "ballotLabel": "GREG ABBOTT",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "GINA HINOJOSA",
+          "partyLabel": "Democratic"
+        },
+        {
+          "ballotLabel": "PAT DIXON",
+          "partyLabel": "Libertarian"
+        }
+      ]
+    },
+    {
+      "key": "lieutenant-governor",
+      "ballotTitle": "Lieutenant Governor",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "783",
+      "candidates": [
+        {
+          "ballotLabel": "DAN PATRICK",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "VIKKI GOODWIN",
+          "partyLabel": "Democratic"
+        },
+        {
+          "ballotLabel": "ANTHONY CRISTO",
+          "partyLabel": "Libertarian"
+        },
+        {
+          "ballotLabel": "KEVIN MCCORMICK",
+          "partyLabel": "Green"
+        }
+      ]
+    },
+    {
+      "key": "attorney-general",
+      "ballotTitle": "Attorney General",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "783",
+      "candidates": [
+        {
+          "ballotLabel": "MAYES MIDDLETON",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "NATHAN JOHNSON",
+          "partyLabel": "Democratic"
+        },
+        {
+          "ballotLabel": "TOM OXFORD",
+          "partyLabel": "Libertarian"
+        }
+      ]
+    },
+    {
+      "key": "comptroller-of-public-accounts",
+      "ballotTitle": "Comptroller of Public Accounts",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "784",
+      "candidates": [
+        {
+          "ballotLabel": "DON HUFFINES",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "SARAH ECKHARDT",
+          "partyLabel": "Democratic"
+        },
+        {
+          "ballotLabel": "V. ALONZO ECHAVARRIA-GARZA",
+          "partyLabel": "Libertarian"
+        },
+        {
+          "ballotLabel": "SHEHLA FAIZI",
+          "partyLabel": "Green"
+        }
+      ]
+    },
+    {
+      "key": "commissioner-general-land-office",
+      "ballotTitle": "Commissioner of the General Land Office",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "784",
+      "candidates": [
+        {
+          "ballotLabel": "DAWN BUCKINGHAM",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "BENJAMIN FLORES",
+          "partyLabel": "Democratic"
+        },
+        {
+          "ballotLabel": "NEILL SNIDER",
+          "partyLabel": "Libertarian"
+        }
+      ]
+    },
+    {
+      "key": "commissioner-of-agriculture",
+      "ballotTitle": "Commissioner of Agriculture",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "784",
+      "candidates": [
+        {
+          "ballotLabel": "NATE SHEETS",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "CLAYTON TUCKER",
+          "partyLabel": "Democratic"
+        },
+        {
+          "ballotLabel": "AUSTIN R. KELLY",
+          "partyLabel": "Libertarian"
+        }
+      ]
+    },
+    {
+      "key": "railroad-commissioner",
+      "ballotTitle": "Railroad Commissioner",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "784",
+      "candidates": [
+        {
+          "ballotLabel": "BO FRENCH",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "JON ROSENTHAL",
+          "partyLabel": "Democratic"
+        },
+        {
+          "ballotLabel": "ARTHUR DIBIANCA",
+          "partyLabel": "Libertarian"
+        }
+      ]
+    },
+    {
+      "key": "chief-justice-supreme-court",
+      "ballotTitle": "Chief Justice, Supreme Court",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "784",
+      "candidates": [
+        {
+          "ballotLabel": "JIMMY BLACKLOCK",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "MAGGIE ELLIS",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "justice-supreme-court-place-2-unexpired",
+      "ballotTitle": "Justice, Supreme Court, Place 2 (Unexpired Term)",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": "Place 2",
+      "seatsAvailable": 1,
+      "sourcePage": "784",
+      "candidates": [
+        {
+          "ballotLabel": "JAMES P. SULLIVAN",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "CHARI KELLY",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "justice-supreme-court-place-7",
+      "ballotTitle": "Justice, Supreme Court, Place 7",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": "Place 7",
+      "seatsAvailable": 1,
+      "sourcePage": "785",
+      "candidates": [
+        {
+          "ballotLabel": "KYLE HAWKINS",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "KRISTEN HAWKINS",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "justice-supreme-court-place-8",
+      "ballotTitle": "Justice, Supreme Court, Place 8",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": "Place 8",
+      "seatsAvailable": 1,
+      "sourcePage": "785",
+      "candidates": [
+        {
+          "ballotLabel": "BRETT BUSBY",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "GISELA D. TRIANA",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "judge-court-criminal-appeals-place-3",
+      "ballotTitle": "Judge, Court of Criminal Appeals, Place 3",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": "Place 3",
+      "seatsAvailable": 1,
+      "sourcePage": "785",
+      "candidates": [
+        {
+          "ballotLabel": "THOMAS SMITH",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "OKEY ANYIAM",
+          "partyLabel": "Democratic"
+        },
+        {
+          "ballotLabel": "MARK ASH",
+          "partyLabel": "Libertarian"
+        }
+      ]
+    },
+    {
+      "key": "judge-court-criminal-appeals-place-4",
+      "ballotTitle": "Judge, Court of Criminal Appeals, Place 4",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": "Place 4",
+      "seatsAvailable": 1,
+      "sourcePage": "785",
+      "candidates": [
+        {
+          "ballotLabel": "KEVIN PATRICK YEARY",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "AUDRA RILEY",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "judge-court-criminal-appeals-place-9",
+      "ballotTitle": "Judge, Court of Criminal Appeals, Place 9",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas",
+      "districtLabel": "Place 9",
+      "seatsAvailable": 1,
+      "sourcePage": "785",
+      "candidates": [
+        {
+          "ballotLabel": "JOHN MESSINGER",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "HOLLY TAYLOR",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "state-senator-district-24",
+      "ballotTitle": "State Senator, District 24",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas Senate District 24",
+      "districtLabel": "District 24",
+      "seatsAvailable": 1,
+      "sourcePage": "785",
+      "candidates": [
+        {
+          "ballotLabel": "PETE FLORES",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "JOE PAZ HERRERA",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "state-representative-district-68",
+      "ballotTitle": "State Representative District 68",
+      "governmentLevel": "state",
+      "jurisdictionName": "Texas House District 68",
+      "districtLabel": "District 68",
+      "seatsAvailable": 1,
+      "sourcePage": "785",
+      "candidates": [
+        {
+          "ballotLabel": "DAVID SPILLER",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "JASMINE HENDERSON",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "chief-justice-15th-court-appeals",
+      "ballotTitle": "Chief Justice, 15th Court of Appeals District",
+      "governmentLevel": "state",
+      "jurisdictionName": "15th Court of Appeals District",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "786",
+      "candidates": [
+        {
+          "ballotLabel": "SCOTT BRISTER",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "JERRY ZIMMERER",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "justice-15th-court-appeals-place-2",
+      "ballotTitle": "Justice, 15th Court of Appeals District, Place 2",
+      "governmentLevel": "state",
+      "jurisdictionName": "15th Court of Appeals District",
+      "districtLabel": "Place 2",
+      "seatsAvailable": 1,
+      "sourcePage": "786",
+      "candidates": [
+        {
+          "ballotLabel": "SCOTT K. FIELD",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "TOM BAKER",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "justice-15th-court-appeals-place-3",
+      "ballotTitle": "Justice, 15th Court of Appeals District, Place 3",
+      "governmentLevel": "state",
+      "jurisdictionName": "15th Court of Appeals District",
+      "districtLabel": "Place 3",
+      "seatsAvailable": 1,
+      "sourcePage": "786",
+      "candidates": [
+        {
+          "ballotLabel": "APRIL FARRIS",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "MARC M. MEYER",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "chief-justice-3rd-court-appeals",
+      "ballotTitle": "Chief Justice, 3rd Court of Appeals District",
+      "governmentLevel": "state",
+      "jurisdictionName": "3rd Court of Appeals District",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "786",
+      "candidates": [
+        {
+          "ballotLabel": "CORY LIU",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "DARLENE BYRNE",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "lampasas-county-judge",
+      "ballotTitle": "County Judge",
+      "governmentLevel": "county",
+      "jurisdictionName": "Lampasas County",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "786",
+      "candidates": [
+        {
+          "ballotLabel": "DAVID LEE MILLICAN",
+          "partyLabel": "Republican"
+        },
+        {
+          "ballotLabel": "WADE DUDLEY WOOTEN",
+          "partyLabel": "Democratic"
+        }
+      ]
+    },
+    {
+      "key": "lampasas-district-clerk",
+      "ballotTitle": "District Clerk",
+      "governmentLevel": "county",
+      "jurisdictionName": "Lampasas County",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "786",
+      "candidates": [
+        {
+          "ballotLabel": "DEE ANN CRAWFORD",
+          "partyLabel": "Republican"
+        }
+      ]
+    },
+    {
+      "key": "lampasas-county-clerk",
+      "ballotTitle": "County Clerk",
+      "governmentLevel": "county",
+      "jurisdictionName": "Lampasas County",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "786",
+      "candidates": [
+        {
+          "ballotLabel": "DIANNE MILLER",
+          "partyLabel": "Republican"
+        }
+      ]
+    },
+    {
+      "key": "lampasas-county-treasurer",
+      "ballotTitle": "County Treasurer",
+      "governmentLevel": "county",
+      "jurisdictionName": "Lampasas County",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "786",
+      "candidates": [
+        {
+          "ballotLabel": "MELISSA KARCHER",
+          "partyLabel": "Republican"
+        }
+      ]
+    },
+    {
+      "key": "lampasas-county-surveyor",
+      "ballotTitle": "County Surveyor",
+      "governmentLevel": "county",
+      "jurisdictionName": "Lampasas County",
+      "districtLabel": null,
+      "seatsAvailable": 1,
+      "sourcePage": "787",
+      "candidates": [
+        {
+          "ballotLabel": "PAUL MAPLES",
+          "partyLabel": "Republican"
+        }
+      ]
+    },
+    {
+      "key": "lampasas-commissioner-precinct-2",
+      "ballotTitle": "County Commissioner Precinct 2",
+      "governmentLevel": "county",
+      "jurisdictionName": "Lampasas County Commissioner Precinct 2",
+      "districtLabel": "Precinct 2",
+      "seatsAvailable": 1,
+      "sourcePage": "787",
+      "candidates": [
+        {
+          "ballotLabel": "JAMIE SMART",
+          "partyLabel": "Republican"
+        }
+      ]
+    },
+    {
+      "key": "lampasas-commissioner-precinct-4",
+      "ballotTitle": "County Commissioner Precinct 4",
+      "governmentLevel": "county",
+      "jurisdictionName": "Lampasas County Commissioner Precinct 4",
+      "districtLabel": "Precinct 4",
+      "seatsAvailable": 1,
+      "sourcePage": "787",
+      "candidates": [
+        {
+          "ballotLabel": "MARK RAINWATER",
+          "partyLabel": "Republican"
+        }
+      ]
+    },
+    {
+      "key": "lampasas-justice-peace-precinct-1",
+      "ballotTitle": "Justice of the Peace Precinct 1",
+      "governmentLevel": "county",
+      "jurisdictionName": "Lampasas County Justice Precinct 1",
+      "districtLabel": "Precinct 1",
+      "seatsAvailable": 1,
+      "sourcePage": "787",
+      "candidates": [
+        {
+          "ballotLabel": "MISTY LYNN WAKEMAN",
+          "partyLabel": "Republican"
+        }
+      ]
+    },
+    {
+      "key": "lampasas-justice-peace-precinct-2",
+      "ballotTitle": "Justice of the Peace Precinct 2",
+      "governmentLevel": "county",
+      "jurisdictionName": "Lampasas County Justice Precinct 2",
+      "districtLabel": "Precinct 2",
+      "seatsAvailable": 1,
+      "sourcePage": "787",
+      "candidates": [
+        {
+          "ballotLabel": "CAMRON BRISTER",
+          "partyLabel": "Republican"
+        }
+      ]
+    },
+    {
+      "key": "lampasas-justice-peace-precinct-4",
+      "ballotTitle": "Justice of the Peace Precinct 4",
+      "governmentLevel": "county",
+      "jurisdictionName": "Lampasas County Justice Precinct 4",
+      "districtLabel": "Precinct 4",
+      "seatsAvailable": 1,
+      "sourcePage": "787",
+      "candidates": [
+        {
+          "ballotLabel": "DAN HAUSE",
+          "partyLabel": "Republican"
+        }
+      ]
+    }
+  ]
+}

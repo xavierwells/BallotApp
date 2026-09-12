@@ -44,15 +44,31 @@ Expected final line: `Dry run only; no database writes were made`.
    geographic `verifiedByReference`.
 5. Run the dry run and review its counts.
 6. Apply the same pinned manifest with `--apply`.
-7. Review the drafts. Two distinct verifier identities must each record a
-   `verified` event targeting the ballot version before publication can work.
+7. Review the drafts. One authenticated staff identity must record a `verified`
+   event targeting the current official ballot content before publication can work.
+
+This remains an interim operator workflow for **ballot styles**. The new staff
+login and [review workspace](EDITORIAL_VERIFICATION_WORKFLOW.md) support the
+county certification review, not ballot-style approval or publication yet.
+Certification decisions cannot substitute for reviewing an assembled ballot.
 
 ## Database publication gates
 
-Migration `013_official_ballot_intake` rejects publication unless the ballot
+Migrations `013_official_ballot_intake` and `016_review_policy` reject publication unless the ballot
 has at least one verified geographic requirement, at least one ballot item, a
-nonblank official-document page citation on every item, and verification events
-from at least two distinct verifier references.
+nonblank official-document page citation on every item, an authoritative official
+document, and at least one authenticated staff review bound to its current
+content fingerprint. Migration 016 supersedes the earlier two-reference rule.
+
+Free-text actor references alone no longer qualify. Official factual claims need
+one authenticated review; candidate statements and interpretive claims need two
+distinct humans. Those general publication controls still need their own UI and
+release acceptance; the certification workspace imports private facts only.
 
 Once published, ordered ballot-item membership is immutable. Corrections use a
 new ballot version and retain the historical version.
+
+Migration `014_candidate_sources` allows the same candidacy and election to
+retain additional official citations, such as a prior state certification,
+without replacing either source. Party affiliation is election-specific. An
+omitted `partyLabel` in a ballot manifest preserves an already certified label.

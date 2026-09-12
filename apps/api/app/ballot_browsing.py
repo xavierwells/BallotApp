@@ -32,7 +32,7 @@ class UnavailableBallotBrowser:
             status="not_available",
             area_type=area_type,
             query=query,
-            message="Ballot browsing is not connected yet. No exact voter match was attempted.",
+            message="We don't have area browsing ready yet. No ballot was selected. Please check with your election office.",
         )
 
 
@@ -113,7 +113,7 @@ class PostgresBallotBrowser:
                 status="not_available",
                 area_type=area_type,
                 query=query,
-                message=f"Reviewed {area_type.value} browse coverage is not connected yet.",
+                message=f"We don't have checked information for browsing by {area_type.value} yet. You can try a ZIP code instead.",
             )
         with self.engine.connect() as connection:
             rows = connection.execute(
@@ -143,7 +143,7 @@ class PostgresBallotBrowser:
                 status="not_found",
                 area_type=area_type,
                 query=query,
-                message="No reviewed Census ZIP-area coverage was found. No exact voter match was attempted.",
+                message="We don't have checked Census area estimates for that ZIP code yet. No ballot was selected.",
             )
 
         grouped: dict[UUID, dict[str, object]] = {}
@@ -174,8 +174,8 @@ class PostgresBallotBrowser:
                     coverage_sources=citations,  # type: ignore[arg-type]
                     most_common_area_match=row["rank"] == 1,  # type: ignore[index]
                     explanation=(
-                        f"Estimated from {row['source_vintage']} aggregate population. "  # type: ignore[index]
-                        "This area ranking does not identify a voter's county, precinct, or ballot."
+                        f"Based on population totals from {row['source_vintage']}. "  # type: ignore[index]
+                        "These estimates describe the area, not your address. They don't tell us your county, voting precinct, or ballot."
                     ),
                 )
             )
@@ -184,8 +184,8 @@ class PostgresBallotBrowser:
             area_type=area_type,
             query=query,
             message=(
-                "Reviewed geographic area estimates are available. Official ballot versions are not connected, "
-                "so no ballot has been selected."
+                "We have checked estimates for the areas below, but haven't connected their official ballots yet. "
+                "No ballot has been selected."
             ),
             area_matches=area_matches,
         )

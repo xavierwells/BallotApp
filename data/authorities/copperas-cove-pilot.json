@@ -100,6 +100,14 @@
           "sourceCategory": "election_information",
           "monitoringClass": "active_election",
           "permittedUse": "direct_link_manual_check"
+        },
+        {
+          "slug": "2026-ballot-certification",
+          "name": "2026 Final Ballot Certification",
+          "sourceUrl": "https://www.sos.state.tx.us/elections/forms/2026-ballot-cert.pdf",
+          "sourceCategory": "candidate_filings",
+          "monitoringClass": "disabled",
+          "permittedUse": "direct_link_manual_check"
         }
       ]
     },

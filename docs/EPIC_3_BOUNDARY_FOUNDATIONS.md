@@ -77,7 +77,7 @@ docker build --target test --tag ballot-api-test apps/api
 docker run --rm --mount type=bind,source="${PWD}/data",target=/app/data,readonly ballot-api-test
 ```
 
-Expected migration revision: `013_official_ballot_intake`. If custom
+Expected migration revision after the editorial update: `018_shared_race_reviews`. If custom
 `POSTGRES_USER` or `POSTGRES_DB` values are set in `.env`, use those in the two
 `psql` commands. Tests use the Dockerfile's dedicated `test` target because the
 security-hardened production API image intentionally contains neither Pytest

@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 
 from app.routers.ballot import router as ballot_router
 from app.routers.health import router as health_router
+from app.routers.editorial import router as editorial_router
+from sqlalchemy.exc import SQLAlchemyError
 
 app = FastAPI(
     title="What's on My Ballot API",
@@ -27,7 +29,7 @@ allowed_origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
@@ -46,3 +48,21 @@ async def sanitized_validation_error(
 
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(ballot_router, prefix="/api/v1")
+app.include_router(editorial_router, prefix="/api/v1")
+
+
+@app.middleware("http")
+async def private_editorial_responses(request: Request, call_next):
+    if not request.url.path.startswith("/api/v1/editorial"):
+        return await call_next(request)
+    if request.headers.get("origin") and request.headers["origin"] != os.getenv("PUBLIC_WEB_ORIGIN", "http://localhost:3000").rstrip("/"):
+        return JSONResponse(status_code=403, content={"detail": "Editorial access requires the configured web origin."},
+                            headers={"Cache-Control": "no-store, private"})
+    try:
+        response = await call_next(request)
+    except (SQLAlchemyError, RuntimeError):
+        # Database errors can contain bound credentials and draft content.
+        response = JSONResponse(status_code=503, content={"detail": "Editorial storage is unavailable. Check migrations and setup."})
+    response.headers["Cache-Control"] = "no-store, private"
+    response.headers["Pragma"] = "no-cache"
+    return response

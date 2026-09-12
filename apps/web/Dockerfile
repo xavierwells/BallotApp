@@ -11,7 +11,7 @@ COPY package.json package-lock.json .npmrc ./
 RUN npm ci --omit=optional
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN npm test && npm run build
 
 FROM node:24-alpine AS runner
 WORKDIR /app

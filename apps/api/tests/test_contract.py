@@ -92,7 +92,7 @@ def test_browse_contract_is_explicitly_not_an_exact_match() -> None:
         "query": "Copperas Cove",
         "exactMatch": False,
         "demonstration": False,
-        "message": "Ballot browsing is not connected yet. No exact voter match was attempted.",
+        "message": "We don't have area browsing ready yet. No ballot was selected. Please check with your election office.",
         "matches": [],
         "areaMatches": [],
     }

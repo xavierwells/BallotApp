@@ -42,6 +42,8 @@ services:
       - ./data/boundaries:/app/data/boundaries:ro
       - ./data/browse:/app/data/browse:ro
       - ./data/ballots:/app/data/ballots:ro
+      - ./data/candidates:/app/data/candidates:ro
+      - ./data/private:/app/data/private:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -63,6 +65,45 @@ services:
       postgres:
         condition: service_healthy
     restart: "no"
+
+  source-fetch:
+    build:
+      context: ./apps/api
+    profiles: ["tools"]
+    entrypoint: ["python", "-m", "app.cli.fetch_source_document"]
+    volumes:
+      # This one-shot operator tool alone writes the Git-ignored intake
+      # directory. The long-running API continues to mount it read-only.
+      - ./data/private:/app/data/private
+    restart: "no"
+
+  api-test:
+    build:
+      context: ./apps/api
+      target: test
+    profiles: ["tests"]
+    environment:
+      TEST_DATABASE_URL: postgresql://ballot_test:ballot_test@test-postgres:5432/ballot_test
+    volumes:
+      - ./data:/app/data:ro
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+
+  test-postgres:
+    image: postgis/postgis:18-3.6-alpine
+    profiles: ["tests"]
+    environment:
+      POSTGRES_DB: ballot_test
+      POSTGRES_USER: ballot_test
+      POSTGRES_PASSWORD: ballot_test
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ballot_test -d ballot_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
 
   postgres:
     image: postgis/postgis:18-3.6-alpine
