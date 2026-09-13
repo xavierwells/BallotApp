@@ -63,10 +63,13 @@ class BoundaryRepository(Protocol):
 
 
 class PostgisBoundaryRepository:
-    """Read effective, verified boundaries using a parameterized PostGIS query."""
+    """Read effective, verified boundaries within one publication."""
 
-    def __init__(self, engine: Engine) -> None:
+    def __init__(self, engine: Engine, *, publication_id: UUID) -> None:
+        if not isinstance(publication_id, UUID):
+            raise ValueError("Boundary lookup requires a publication UUID")
         self.engine = engine
+        self.publication_id = publication_id
 
     def memberships_at(
         self, *, longitude: float, latitude: float, effective_on: date, uncertainty_meters: float = 0
@@ -90,12 +93,15 @@ class PostgisBoundaryRepository:
                     "JOIN election_authorities subject ON subject.id = bv.authority_id "
                     "JOIN election_authorities publisher ON publisher.id = bd.publisher_authority_id "
                     "WHERE bv.status = 'verified' AND ga.status = 'active' "
+                    "AND subject.publication_id = :publication_id "
+                    "AND publisher.publication_id = subject.publication_id "
                     "AND bv.effective_from <= :effective_on "
                     "AND (bv.effective_to IS NULL OR bv.effective_to >= :effective_on) "
                     f"AND ST_Covers(bv.boundary, {point_sql}) "
                     "ORDER BY ga.area_type, ga.name, bv.id"
                 ),
                 {
+                    "publication_id": self.publication_id,
                     "longitude": longitude,
                     "latitude": latitude,
                     "effective_on": effective_on,

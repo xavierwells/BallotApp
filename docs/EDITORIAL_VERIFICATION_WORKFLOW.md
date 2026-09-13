@@ -1,5 +1,16 @@
 # Editorial verification workflow
 
+**Current upgrade:** the separate [county-guide publication slice](COUNTY_GUIDE_PUBLICATION.md)
+requires migration 019 and a one-time publisher grant. The 015–018 instructions
+below document the established review/import workflow; do not rerun setup or
+repeat completed reviews to enable publication.
+
+**Navigation:** use **Staff login** at the bottom of the homepage. Every new
+sign-in opens `/editorial/site-map`; choose **Review official facts** for the
+existing queue or **Preview and publishing** for imported guides. Both tools
+link back to the site map. Existing accounts/permissions are unchanged. See
+[browsing and staff navigation](BROWSING_AND_STAFF_NAVIGATION.md).
+
 ## Pilot policy
 
 The owner approved loading source-backed material before review. New material
@@ -36,7 +47,8 @@ registry, records the previously approved narrow official-fact source-use
 decision if still pending, registers the downloaded PDF, and loads three
 private county batches. It does not retrieve the PDF again or verify any facts.
 
-Open [the editorial workspace](http://localhost:3000/editorial) and sign in.
+Open [staff login](http://localhost:3000/editorial/login), sign in, and choose
+**Review official facts** from the site map.
 A repeated setup preserves the existing password, browser corrections and decisions
 when the intake manifest is unchanged. Rejected/retired sources and conflicting existing source
 permissions are not overridden.
@@ -50,8 +62,9 @@ and confirm `018_shared_race_reviews` in `alembic_version`.
 
 ## Review without a shell
 
-1. Choose Bell, Coryell, or Lampasas from the task queue.
-2. Choose a source page. Read the retained PDF beside the extracted race and
+1. Choose Bell, Coryell, or Lampasas from the task queue. The workspace opens
+   the first page that still needs content review, skipping completed pages.
+2. Read the retained PDF beside the extracted race and
    candidate table; open the PDF in a separate tab if the embedded viewer is
    unavailable. The screen shows both the printed citation and the physical PDF
    page. The SOS certification's cover makes PDF pages one higher (printed 271
@@ -59,15 +72,22 @@ and confirm `018_shared_race_reviews` in `alembic_version`.
 3. Each office/race remains one section with its candidate table. Choose
    **Accept** after checking all its names, office title and party labels, or
    **Flag** if anything is wrong. A flagged section gets its own notes box.
-4. For a transcription mistake, choose **Correct our transcription** inside
-   that section. Type the corrected office title or candidate name, or choose
-   the correct party. The value must match the cited PDF. If the official source
+4. For a transcription mistake, select **Flag** for that section first. Its
+   plain heading and candidate/party table switch to prefilled office title,
+   candidate name fields and a party dropdown for inline editing; there is no
+   separate correction button. Unflagged sections keep their compact plain-text
+   appearance, without read-only input boxes. A changed field shows its original
+   value and becomes an unsaved correction; Accept
+   is unavailable until the correction is saved. The value must match the cited PDF. If the official source
    itself appears wrong, leave a source-issue note instead of rewriting its label.
 5. Select **Submit review** at the bottom to save all your pending section
    decisions and corrections together, including choices on other pages of this
    county. Nothing autosaves. Untouched sections are not accepted. Unsaved
    choices survive page navigation and failed submissions, but are not persisted
-   across reload/sign-out; the browser warns before discarding them.
+   across reload/sign-out; the browser warns before discarding them. After a
+   successful save, a completed page advances to the next unfinished page.
+   Partially reviewed, flagged or newly corrected pages stay open. Failed saves
+   never advance the page or clear your choices.
 6. A correction creates a new private revision and stays flagged. Compare the
    updated text with the PDF, then Accept that section in a later submission.
    The same reviewer can do this; official facts do not need a second person.
@@ -79,6 +99,18 @@ and confirm `018_shared_race_reviews` in `alembic_version`.
 8. Once the county has no pending or flagged races and no unsaved changes, select **Import reviewed
    county**. This creates unpublished civic records. Other counties can remain
    unreviewed; this operation does not create a ballot style or publish a guide.
+
+Completed pages are gray and labeled **Content reviewed** in the page navigator.
+Opening one asks for confirmation; cancelling preserves the current page and
+unsaved choices. Reopening is only navigation: it does not reset approvals or
+submit a review, and you can still flag a discrepancy. A page is complete only
+when every section has saved qualifying content review (including shared review)
+and no unsaved changes. Pending choices alone never count as approval.
+
+When all page content is reviewed, the workspace shows a county overview instead
+of reopening an old page. County-source confirmation and import remain available
+there, along with a link to the retained PDF. Gray pages mean content is reviewed,
+not that county coverage has been confirmed or records imported/published.
 
 The master submit is one transaction: an invalid section or failed correction
 cannot partially save other decisions. A field correction records before/after
@@ -94,6 +126,13 @@ Restoring an older spelling does not restore its old acceptance. A new source
 document or changed election/context requires fresh acceptance throughout.
 
 Browser corrections currently cover office title, candidate name and party.
+Focusing an unchanged field does not create a review. Typing its original value
+back removes that correction but keeps the selected Flag. Selecting Accept
+restores the plain-text view (after corrections are saved or reverted).
+**Undo unsaved choices** discards the section's pending edits and
+decision together. Enter in a transcription field does not submit the form.
+If undo leaves no saved Flag selected, the section returns to plain text too.
+Imported and non-current revisions display read-only values.
 Adding/removing candidates, changing jurisdictions or source citations still
 requires a controlled manifest revision. Re-running setup with the original,
 unchanged intake file does not undo browser corrections.
@@ -107,6 +146,19 @@ See [shared race review](SHARED_RACE_REVIEW.md) for matching rules, separate cou
 coverage and the immutable evidence receipt. Shared review never creates a fake
 human check of another county page. An AI comparison is not a guarantee and must
 not be submitted under a person's username as if they performed that review.
+
+## After county review and import
+
+The operator reported review/import completion on 2026-09-12. The saved database
+decisions and import receipts are authoritative; this status note does not
+perform a review or publish facts.
+
+Use **Private guide preview** at `/editorial/preview` to browse imported offices,
+candidate/party labels, source pages and historical review evidence. It reads
+canonical records, not the extraction draft, and remains staff-only. No repeat
+setup, migration or review is required for this slice. See
+[`PRIVATE_GUIDE_PREVIEW.md`](PRIVATE_GUIDE_PREVIEW.md) for rebuild commands,
+API contracts, limitations and checks. Public publication is still separate.
 
 ## What the application enforces
 
@@ -174,13 +226,22 @@ and staff provisioning, not completion of content review.
 Engineering checks for the 018 update on 2026-09-12: **142 passed, 13 skipped,
 1 warning**. The thirteen database-backed tests require Docker/PostGIS unavailable in
 this shell; the existing Starlette/httpx warning remains. Migration 018 renders
-as offline SQL; execution against PostgreSQL is still pending. Five frontend
-unit tests and the production web build pass. Mocked browser checks cover mixed
+as offline SQL; execution against PostgreSQL is still pending. The subsequent
+frontend navigation and inline-edit update passes **23 frontend unit tests** and a production
+web build; it does not change the API or database. Mocked browser checks cover mixed
 section decisions, correction history, separate acceptance, retry without losing
 edits, page navigation, sign-out discard protection and desktop/mobile layouts.
 Shared-review browser checks also verify donor attribution/source links, no
 prefilled local acceptance, county confirmation, stale evidence handling and
-the ability to flag a shared section.
+the ability to flag a shared section. Navigation checks cover first-unfinished
+loading, gray completed pages, reopen/cancel prompts, draft preservation, failed
+saves, partial/flagged/corrected pages, forward skipping, the completed overview,
+county confirmation/import, keyboard focus and desktop/mobile layouts.
+Inline-edit checks cover prefilled title/name/party controls, no-op focus/blur,
+plain-text default rendering, Flag-first field display, section isolation,
+Accept/undo restoring plain text,
+reverting edits, original-value display, Enter protection, blank-field validation,
+failed-save retry, correction payloads and read-only imported records.
 These do not replace testing against the real API and private PDF.
 
 The dependency audit found new advisories against Next.js 16.3.1, so the lockfile
@@ -203,9 +264,33 @@ uses the pilot database. Stop that temporary service after testing with
 The web Docker build also runs the frontend unit tests with Node's built-in
 test runner; locally, run `npm test` from `apps/web` with the supported Node version.
 
-Pending: operator verification of migration 018 and the updated review UI;
+For the navigation/inline-edit update on an already-running stack with migration 018,
+rebuild just the web service, then refresh `/editorial`:
+
+```powershell
+docker compose up -d --build --no-deps web
+```
+
+This frontend update adds no migration and does not require repeating setup.
+
+Latest checks after the boundary-scope fix: 166 API tests passed, 14 database tests skipped, 1 existing
+warning; 27 frontend tests and the production build passed. Desktop/mobile mocked
+browser checks passed. The operator reports completed review/import and a Docker
+run with 176 passed, 1 failed, 16 warnings. Preview/editorial tests passed. The
+older migration test's cross-publication boundary lookup is fixed; rerun the
+isolated suite before rebuilding the API/web. No review reset or data deletion
+is needed. See the private-preview guide for the regression and rerun details.
+
+The owner has now accepted the private preview visually. The separate
+[county-guide publication workflow](COUNTY_GUIDE_PUBLICATION.md) adds migration
+019, explicitly granted publisher access, publish/replace/withdraw confirmations,
+and public frozen county guides. New drafts do not silently replace a release.
+The earlier no-publication statements above describe the 015–018 review/import
+slice, not these new separately gated release controls.
+
+Pending: the latest database-backed integration run and publication acceptance;
 staff administration screen; correction/supersession of already imported records;
-official ballot and editorial publication screens; general interview intake.
+official exact-ballot and general editorial publication screens; general interview intake.
 Exact ballot styles and authoritative geography remain Epic 3 work.
 
 See [the backlog](PRODUCT_DELIVERY_BACKLOG.md),

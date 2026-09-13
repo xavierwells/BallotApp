@@ -28,5 +28,11 @@ This is a proposed operating cut line for the November 3, 2026 election. Texas e
 | Sep 26–Oct 9 | Public beta, corrections workflow, complete voting-logistics integration, daily ballot/source checks. |
 | Oct 10–18 | Launch readiness, accessibility/performance review, daily verification and unresolved-boundary handling. |
 | Oct 19–Nov 3 | Election mode: multiple daily checks for logistics/ballot changes and rapid corrections. |
+| Nov 4–15 | Freeze ordinary guide editing, ingest/review official published results, prepare the static archive, snapshot approved aggregate metrics, and verify backups/restore. |
+| Nov 16–18 | Serve the static archive at the public domain, disable address lookup/editorial access, and retain the dynamic host only as a short rollback option. |
+| Nov 19 and later | Destroy the pilot Droplet after static/backup verification; update the versioned static archive when authorities certify results. |
+
+The detailed gates, result-status rules, privacy limits and rollback path are in
+[`POST_ELECTION_TRANSITION_2026.md`](POST_ELECTION_TRANSITION_2026.md).
 
 Candidate outreach must begin once candidacy is adequately confirmed; it should not wait for every ballot item to be fully published. Any provisional detail remains unpublished until verified.

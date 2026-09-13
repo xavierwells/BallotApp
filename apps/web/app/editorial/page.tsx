@@ -2,8 +2,10 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import styles from "./review.module.css";
-import { fieldCorrections, sectionSubmission } from "./review-draft";
+import { editTranscription, fieldCorrections, sectionSubmission } from "./review-draft";
 import type { SectionChoice, SectionDraft } from "./review-draft";
+import { firstUnfinishedPage, pageAfterSubmission, reviewPages } from "./review-navigation";
+import StaffLogin from "./staff-login";
 
 const API = `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080"}/api/v1/editorial`;
 type Staff = { username: string };
@@ -43,8 +45,17 @@ export default function EditorialPage() {
   const [countyConfirmed, setCountyConfirmed] = useState(false);
   const hasPending = Object.keys(drafts).length > 0;
   const requestVersion = useRef(0);
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => { setCountyConfirmed(false); }, [batch?.id, batch?.reviewBasisHash]);
+
+  useEffect(() => {
+    if (!batch) return;
+    reviewHeading.current?.focus({ preventScroll: true });
+    reviewHeading.current?.scrollIntoView({ block: "start" });
+    // After a page transition, put keyboard/screen-reader focus at the new work.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batch?.id, page]);
 
   async function api(path: string, init: RequestInit = {}) {
     const response = await fetch(API + path, { ...init, credentials: "include", cache: "no-store",
@@ -86,17 +97,6 @@ export default function EditorialPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staff]);
 
-  async function signIn(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setError("");
-    const form = event.currentTarget;
-    const values = new FormData(form);
-    const payload = { username: String(values.get("username") ?? ""), password: String(values.get("password") ?? "") };
-    form.reset();
-    try { await api("/login", { method: "POST", body: JSON.stringify(payload) }); setStaff(await api("/me")); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not sign in."); }
-    finally { payload.password = ""; setBusy(false); }
-  }
-
   async function openBatch(id: string) {
     if (hasPending && !window.confirm("Discard your unsubmitted decisions and corrections before opening another task?")) return;
     setDrafts({});
@@ -105,12 +105,18 @@ export default function EditorialPage() {
     try {
       const next: Batch = await api(`/batches/${id}`);
       if (version !== requestVersion.current) return;
-      setBatch(next); setPage(next.races[0]?.sourcePage ?? "");
+      setBatch(next); setPage(next.imported ? "" : firstUnfinishedPage(next.races) ?? "");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not open this review task."); }
     finally { if (version === requestVersion.current) setBusy(false); }
   }
 
-  function switchPage(next: string) { setPage(next); setNotice(""); }
+  function switchPage(next: string) {
+    if (next === page) return;
+    const target = reviewPages(batch?.races ?? [], drafts).find(item => item.sourcePage === next);
+    if (!target) return;
+    if (target.complete && !window.confirm(`This page's content has already been reviewed (page ${next}). Open it again to inspect the source or flag a correction? Existing approvals will not be reset.`)) return;
+    setPage(next); setNotice("");
+  }
 
   function changeDraft(race: Race, changes: Partial<SectionDraft>) {
     const saved = race.decisions.find(item => item.reviewer === staff?.username);
@@ -122,7 +128,16 @@ export default function EditorialPage() {
   }
 
   function editField(race: Race, field: string, value: string) {
-    changeDraft(race, { decision: "flagged", editing: true, edits: { ...drafts[race.key]?.edits, [field]: value } });
+    const saved = race.decisions.find(item => item.reviewer === staff?.username);
+    if (!batch?.current || batch.imported || busy || (drafts[race.key]?.decision ?? saved?.decision) !== "flagged") return;
+    setNotice("");
+    setDrafts(previous => {
+      const next = { ...previous };
+      const edited = editTranscription(race, previous[race.key], field, value, saved);
+      if (edited) next[race.key] = edited;
+      else delete next[race.key];
+      return next;
+    });
   }
 
   async function submitReview(event: FormEvent<HTMLFormElement>) {
@@ -132,12 +147,16 @@ export default function EditorialPage() {
     try {
       const sections = sectionSubmission(batch.races, drafts);
       if (!sections.length) return;
-      const updated = await api(`/batches/${batch.id}/review`, { method: "POST",
+      const updated: Batch = await api(`/batches/${batch.id}/review`, { method: "POST",
         body: JSON.stringify({ sections, confirmed: true }) });
       setBatch(updated); setBatches(previous => previous.map(item => item.id === batch.id ? updated : item));
-      setNotice(sections.some(section => section.corrections.length) ?
+      const nextPage = pageAfterSubmission(updated.races, page);
+      setPage(nextPage ?? "");
+      const savedNotice = sections.some(section => section.corrections.length) ?
         "Saved. Corrected sections remain flagged until you compare and accept the updated text. Unchanged reviews were preserved." :
-        "Section decisions saved. Flags remain unresolved; nothing was published.");
+        "Section decisions saved. Nothing was published.";
+      setNotice(savedNotice + (nextPage === null ? " All page content is reviewed. County source confirmation and import remain separate." :
+        nextPage !== page ? ` Opened unfinished page ${nextPage}.` : " This page still has content needing review or attention."));
       setDrafts({});
       // Shared review can change progress in other counties without writing any
       // review under their names. Refresh the queue after a successful save.
@@ -155,19 +174,21 @@ export default function EditorialPage() {
       const updated = await api(`/batches/${batch.id}/import`, { method: "POST",
         body: JSON.stringify({ confirmedCountyCoverage: countyConfirmed, reviewBasisHash: batch.reviewBasisHash }) });
       setBatch(updated); setBatches(previous => previous.map(item => item.id === updated.id ? updated : item));
+      setPage("");
       setNotice("Reviewed facts imported. Public ballot publication is a separate step.");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not import this draft."); }
     finally { setBusy(false); }
   }
 
-  const pages = batch ? Array.from(new Set(batch.races.map(race => race.sourcePage))) : [];
+  const pages = reviewPages(batch?.races ?? [], drafts);
+  const currentPage = pages.find(item => item.sourcePage === page);
   const visible = batch?.races.filter(race => race.sourcePage === page) ?? [];
   const pdfPage = visible[0]?.pdfPageNumber;
   const sourceUrl = batch ? `${API}/batches/${batch.id}/source${pdfPage ? `#page=${pdfPage}` : ""}` : "";
 
   return <main className={styles.workspace}>
     <header className={styles.header}>
-      <div><a href="/">What&apos;s on My Ballot</a><h1>Editorial workspace</h1>
+      <div><a href="/editorial/site-map">← Staff site map</a>{" · "}<a href="/">Homepage</a><h1>Editorial workspace</h1>
         <p>Check official facts against their source, one section at a time.</p></div>
       {staff && <div className={styles.account}><span>Signed in as {staff.username}</span>
         <button disabled={busy} className={styles.secondary} onClick={async () => {
@@ -181,18 +202,14 @@ export default function EditorialPage() {
     {error && <p role="alert" className={styles.error}>{error}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {loading ? <p role="status">Opening workspace…</p> : !staff ?
-      <section className={styles.login}><h2>Staff sign-in</h2><p>Use the account created during editorial setup.</p>
-        <form onSubmit={signIn}>
-          <label htmlFor="username">Username</label><input id="username" name="username" autoComplete="username" required maxLength={80} />
-          <label htmlFor="password">Passphrase</label><input id="password" name="password" type="password" autoComplete="current-password" required maxLength={256} />
-          <button disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-        </form></section> : <>
+      <StaffLogin /> : <>
+      <p><a href="/editorial/preview">Private guide preview</a> · Browse imported records without changing reviews or publishing.</p>
       <section aria-label="County review tasks" className={styles.queue}>
         {batches.length === 0 && <p>No review tasks yet. Run the documented pilot setup to load the downloaded certification.</p>}
         {batches.map(item => <button key={item.id} disabled={busy} aria-pressed={batch?.id === item.id}
           className={`${styles.task} ${batch?.id === item.id ? styles.active : ""}`} onClick={() => openBatch(item.id)}>
           <strong>{item.county}</strong><span>{item.raceCount} races · {item.candidateCount} candidate entries</span>
-          <span>{item.imported ? "Imported · unpublished" : `${item.reviewedRaces} of ${item.raceCount} race contents reviewed`}</span>
+          <span>{item.imported ? "Imported · publication managed in preview" : `${item.reviewedRaces} of ${item.raceCount} race contents reviewed`}</span>
           {!!item.sharedReviewedRaces && <span>{item.sharedReviewedRaces} shared content review(s)</span>}
         </button>)}
       </section>
@@ -203,15 +220,33 @@ export default function EditorialPage() {
           <p>{batch.election.name} · Revision {batch.revision}</p>
           <p>{batch.reviewedRaces} of {batch.raceCount} race contents reviewed · {batch.requiredReviewers} human review{batch.requiredReviewers === 1 ? "" : "s"} required</p>
           {!!batch.sharedReviewedRaces && <p>{batch.sharedReviewedRaces} reused from matching county entries. County source coverage is separate.</p>}
-        </div><span className={styles.badge}>{batch.imported ? "Imported · unpublished" : "Private draft"}</span></div>
+        </div><span className={styles.badge}>{batch.imported ? "Imported" : "Private draft"}</span></div>
         <p className={styles.scope}>This review checks names, offices and party labels against the certification.
           Ballot styles, local contests and geographic applicability are prepared separately.</p>
-        <nav aria-label="Source pages" className={styles.pages}>{pages.map(value =>
-          <button key={value} disabled={busy} aria-current={page === value ? "page" : undefined}
-            className={page === value ? "" : styles.secondary} onClick={() => switchPage(value)}>Page {value}</button>)}</nav>
+        <nav aria-label="Source pages" aria-describedby="page-navigation-help" className={styles.pages}>{pages.map(item =>
+          <button key={item.sourcePage} disabled={busy} aria-current={page === item.sourcePage ? "page" : undefined}
+            className={`${page === item.sourcePage ? "" : styles.secondary} ${item.complete ? styles.reviewedPageButton : ""}`}
+            onClick={() => switchPage(item.sourcePage)}>Page {item.sourcePage}
+            <span className={styles.pageStatus}>{item.pending ? "Unsaved choices" : item.complete ? "Content reviewed" :
+              item.flagged ? "Needs attention" : `${item.reviewed}/${item.total} reviewed`}</span>
+          </button>)}</nav>
+        <p id="page-navigation-help" className={styles.small}>Reviewed pages are gray and skipped automatically.
+          Opening one asks for confirmation. Shared content reviews count here; county source coverage is separate.</p>
         {hasPending && <p role="status" className={styles.pending}>You have {Object.keys(drafts).length} unsubmitted section decision(s).
           Choices stay here when changing pages; use Submit review to save them.</p>}
-        <div className={styles.comparison}>
+        <h3 ref={reviewHeading} tabIndex={-1} className={styles.reviewHeading}>{page ? `Review printed page ${page}` : "County review overview"}</h3>
+        {!page ? <section className={styles.reviewOverview} aria-label="Review overview">
+          <h4>{batch.imported ? "This county has already been imported" : "All page content is reviewed"}</h4>
+          <p>{batch.imported ? "The saved review history remains available. Open a gray page above to inspect it." :
+            "There are no unfinished content pages to open. You can inspect a reviewed page above or continue to county confirmation and import below."}</p>
+          {batch.requiresCountyConfirmation && <p>Shared content approval does not check this county&apos;s contest list.
+            Use the retained PDF to check county source coverage before confirming below.</p>}
+          <a href={`${API}/batches/${batch.id}/source`} target="_blank" rel="noreferrer">Open retained PDF for county source coverage</a>
+          {batch.imported && <p><a href="/editorial/preview">View imported records in the private guide preview</a></p>}
+        </section> : <>
+        {currentPage?.complete && <p className={styles.reviewedNotice}>This page&apos;s content is already reviewed.
+          Viewing it does not reset any approval. You may still inspect the source or flag a correction.</p>}
+        <div className={`${styles.comparison} ${currentPage?.complete ? styles.reviewedContent : ""}`}>
           <aside className={styles.evidence}>
             <h3>Official source · printed page {page}</h3>
             <p className={styles.small}>{pdfPage ? `PDF viewer page ${pdfPage}` : "Find the cited page manually in the PDF."}</p>
@@ -222,22 +257,59 @@ export default function EditorialPage() {
               check the printed page number when comparing facts.</p>
             <a href={batch.source.url} target="_blank" rel="noreferrer">Publisher&apos;s source</a>
           </aside>
-          <form className={styles.facts} onSubmit={submitReview}>
+          <form className={styles.facts} onSubmit={submitReview} onKeyDown={event => {
+            // Enter in a transcription field must not submit the whole county.
+            if (event.key === "Enter" && event.target instanceof HTMLInputElement && event.target.type === "text") event.preventDefault();
+          }}>
             <h3>Extracted facts</h3>
-            <p className={styles.small}>Choose Accept or Flag for each section you review. Submit all your choices together below.</p>
+            <p className={styles.small}>{batch.imported || !batch.current ? "This revision is read-only." :
+              "Choose Accept or Flag for each section. Selecting Flag shows prefilled edit fields and a notes box. Save corrections first, then accept the corrected text. Submit everything together below."}</p>
             {visible.map(race => {
               const saved = race.decisions.find(item => item.reviewer === staff?.username);
               const draft = drafts[race.key];
               const choice = draft?.decision ?? saved?.decision;
               const edits = draft ? fieldCorrections(race, draft) : [];
+              const editable = !batch.imported && batch.current && choice === "flagged";
               return <article key={race.key} className={styles.race} aria-label={race.ballotTitle}>
               <div className={styles.raceHeader}>
-                <h4>{race.ballotTitle}</h4><span className={styles.badge}>{race.reviewStatus === "reviewed" && race.sharedReviews?.length && !race.countySourceReviewed ? "Shared content reviewed" : statusLabel[race.reviewStatus]}</span>
+                {editable ? <div className={styles.officeTitle}>
+                  <h4 className={styles.srOnly}>{race.ballotTitle}</h4>
+                  <label htmlFor={`title-${race.key}`} className={styles.small}>Office title</label>
+                  <input id={`title-${race.key}`} className={styles.transcriptionInput} maxLength={255} disabled={busy}
+                    autoComplete="off" spellCheck={false} value={draft?.edits.ballotTitle ?? race.ballotTitle}
+                    aria-describedby={edits.some(edit => edit.field === "ballotTitle") ? `original-title-${race.key}` : undefined}
+                    onChange={event => editField(race, "ballotTitle", event.target.value)}
+                    onBlur={event => editField(race, "ballotTitle", event.target.value.trim())} />
+                  {edits.some(edit => edit.field === "ballotTitle") && <p id={`original-title-${race.key}`} className={styles.original}>Original: {race.ballotTitle}</p>}
+                </div> : <h4>{race.ballotTitle}</h4>}
+                <span className={styles.badge}>{race.reviewStatus === "reviewed" && race.sharedReviews?.length && !race.countySourceReviewed ? "Shared content reviewed" : statusLabel[race.reviewStatus]}</span>
               </div>
               <p className={styles.small}>{race.jurisdictionName}{race.districtLabel ? ` · ${race.districtLabel}` : ""}</p>
-              <table><caption className={styles.srOnly}>{race.ballotTitle} candidate labels</caption>
+              <table className={editable ? `${styles.candidateTable} ${styles.editableCandidates}` : undefined}><caption className={styles.srOnly}>{race.ballotTitle} candidate labels</caption>
                 <thead><tr><th>Candidate</th><th>Party</th></tr></thead>
-                <tbody>{race.candidates.map(candidate => <tr key={candidate.ballotLabel}><td>{candidate.ballotLabel}</td><td>{candidate.partyLabel}</td></tr>)}</tbody>
+                <tbody>{race.candidates.map((candidate, index) => <tr key={index}>
+                  <td>{editable ? <>
+                    <label className={styles.srOnly} htmlFor={`name-${race.key}-${index}`}>Candidate name {index + 1}</label>
+                    <input id={`name-${race.key}-${index}`} className={styles.transcriptionInput} maxLength={255} disabled={busy}
+                      autoComplete="off" spellCheck={false} value={draft?.edits[`ballotLabel:${index}`] ?? candidate.ballotLabel}
+                      aria-describedby={edits.some(edit => edit.field === "ballotLabel" && edit.candidateIndex === index) ? `original-name-${race.key}-${index}` : undefined}
+                      onChange={event => editField(race, `ballotLabel:${index}`, event.target.value)}
+                      onBlur={event => editField(race, `ballotLabel:${index}`, event.target.value.trim())} />
+                    {edits.some(edit => edit.field === "ballotLabel" && edit.candidateIndex === index) &&
+                      <p id={`original-name-${race.key}-${index}`} className={styles.original}>Original: {candidate.ballotLabel}</p>}
+                  </> : candidate.ballotLabel}</td>
+                  <td>{editable ? <>
+                    <label className={styles.srOnly} htmlFor={`party-${race.key}-${index}`}>Party {index + 1}</label>
+                    <select id={`party-${race.key}-${index}`} className={styles.transcriptionInput} disabled={busy}
+                      value={draft?.edits[`partyLabel:${index}`] ?? candidate.partyLabel}
+                      aria-describedby={edits.some(edit => edit.field === "partyLabel" && edit.candidateIndex === index) ? `original-party-${race.key}-${index}` : undefined}
+                      onChange={event => editField(race, `partyLabel:${index}`, event.target.value)}>
+                      {["Republican", "Democratic", "Libertarian", "Green", "Independent", "None listed"].map(party => <option key={party}>{party}</option>)}
+                    </select>
+                    {edits.some(edit => edit.field === "partyLabel" && edit.candidateIndex === index) &&
+                      <p id={`original-party-${race.key}-${index}`} className={styles.original}>Original: {candidate.partyLabel}</p>}
+                  </> : candidate.partyLabel}</td>
+                </tr>)}</tbody>
               </table>
               {!!race.matchingCounties?.length && <p className={styles.small}>Also listed in {race.matchingCounties.join(", ")}.</p>}
               {!!race.sharedReviews?.length && <div className={styles.sharedReview}>
@@ -271,29 +343,8 @@ export default function EditorialPage() {
                   <label htmlFor={`note-${race.key}`}>What is wrong in this section?</label>
                   <textarea id={`note-${race.key}`} rows={2} maxLength={2000} value={draft?.note ?? saved?.note ?? ""}
                     onChange={event => changeDraft(race, { decision: "flagged", note: event.target.value })} />
-                  <p className={styles.small}>Add a note, or correct our transcription below. If the official source itself is wrong,
+                  <p className={styles.small}>Add a note, or edit a transcription field above. If the official source itself is wrong,
                     describe the source issue here; do not silently rewrite its ballot label.</p>
-                  {!draft?.editing ? <button type="button" className={styles.secondary}
-                    onClick={() => changeDraft(race, { decision: "flagged", editing: true })}>Correct our transcription</button> :
-                    <div className={styles.correctionFields}>
-                      <p className={styles.small}>Enter only corrections that match the cited PDF. Submit first; accept the corrected section afterward.</p>
-                      <label htmlFor={`title-${race.key}`}>Corrected office title</label>
-                      <p className={styles.original}>Current: {race.ballotTitle}</p>
-                      <input id={`title-${race.key}`} maxLength={255} value={draft.edits.ballotTitle ?? race.ballotTitle}
-                        onChange={event => editField(race, "ballotTitle", event.target.value)} />
-                      {race.candidates.map((candidate, index) => <div className={styles.candidateCorrection} key={index}>
-                        <label htmlFor={`name-${race.key}-${index}`}>Corrected candidate name {index + 1}</label>
-                        <p className={styles.original}>Current: {candidate.ballotLabel}</p>
-                        <input id={`name-${race.key}-${index}`} maxLength={255} value={draft.edits[`ballotLabel:${index}`] ?? candidate.ballotLabel}
-                          onChange={event => editField(race, `ballotLabel:${index}`, event.target.value)} />
-                        <label htmlFor={`party-${race.key}-${index}`}>Corrected party {index + 1}</label>
-                        <p className={styles.original}>Current: {candidate.partyLabel}</p>
-                        <select id={`party-${race.key}-${index}`} value={draft.edits[`partyLabel:${index}`] ?? candidate.partyLabel}
-                          onChange={event => editField(race, `partyLabel:${index}`, event.target.value)}>
-                          {["Republican", "Democratic", "Libertarian", "Green", "Independent", "None listed"].map(party => <option key={party}>{party}</option>)}
-                        </select>
-                      </div>)}
-                    </div>}
                 </div>}
               </fieldset>}
               {race.decisions.map(decision => <p className={styles.small} key={decision.reviewer}>
@@ -319,6 +370,7 @@ export default function EditorialPage() {
             </div>}
           </form>
         </div>
+        </>}
         <footer className={styles.import}>
           {batch.requiresCountyConfirmation && !batch.imported && <label className={styles.countyConfirmation}>
             <input type="checkbox" checked={countyConfirmed} disabled={busy || hasPending || batch.reviewedRaces !== batch.raceCount}

@@ -4,8 +4,43 @@ from pydantic import ValidationError
 
 from app.main import app
 from app.schemas.ballot_resolution import BallotBrowseResponse, MultipleBallotsResponse
+from app.routers.ballot import browser_from_environment, AddressResolutionRequest
+from app.ballot_browsing import SyntheticDemoBallotBrowser
 
 client = TestClient(app)
+
+
+@pytest.mark.parametrize("query", ["76522-1234", " 76522-1234 "])
+def test_zip_plus_four_uses_same_coarse_zip_evidence_and_discloses_it(query):
+    app.dependency_overrides[browser_from_environment] = lambda: SyntheticDemoBallotBrowser()
+    try:
+        extended = client.get("/api/v1/ballots/browse", params={"areaType": "zip", "query": query})
+        plain = client.get("/api/v1/ballots/browse", params={"areaType": "zip", "query": "76522"})
+        assert extended.status_code == 200
+        value = extended.json()
+        assert value["query"] == "76522" and value["exactMatch"] is False
+        assert "five-digit ZIP area" in value["message"]
+        assert value["matches"] == plain.json()["matches"]
+        assert "1234" not in extended.text
+    finally:
+        app.dependency_overrides.pop(browser_from_environment, None)
+
+
+@pytest.mark.parametrize("value", ["", "     ", "  no  ", "\t\n    "])
+def test_address_rejects_whitespace_padding_before_resolver(value):
+    with pytest.raises(ValidationError):
+        AddressResolutionRequest(address=value)
+
+
+def test_address_trims_outer_spaces_without_rewriting_the_address():
+    assert AddressResolutionRequest(address="  123 Synthetic Street  ").address == "123 Synthetic Street"
+
+
+@pytest.mark.parametrize("query", ["７６５２２", "7652", "76522-123", "76522-12345", "   "])
+def test_invalid_zip_formats_are_rejected(query):
+    response = client.get("/api/v1/ballots/browse", params={"areaType": "zip", "query": query})
+    assert response.status_code == 422
+    assert '"input"' not in response.text
 
 
 def test_openapi_contract_is_published() -> None:

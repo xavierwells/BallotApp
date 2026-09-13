@@ -11,13 +11,13 @@ from app.editorial_auth import create_user, hash_password
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Create, reset, or disable a publication-scoped editorial account")
-    parser.add_argument("action", choices=("create", "reset-password", "disable"))
+    parser.add_argument("action", choices=("create", "reset-password", "disable", "grant-publisher", "revoke-publisher"))
     parser.add_argument("--username", required=True)
     parser.add_argument("--organization-slug", default="whats-on-my-ballot")
     parser.add_argument("--publication-slug", default="copperas-cove")
     args = parser.parse_args()
     password = None
-    if args.action != "disable":
+    if args.action in {"create", "reset-password"}:
         password = getpass("New passphrase (15+ characters): ")
         if password != getpass("Repeat passphrase: "):
             raise SystemExit("Passphrases did not match. No changes made.")
@@ -43,8 +43,11 @@ def main() -> None:
             if args.action == "reset-password":
                 connection.execute(text("UPDATE editorial_users SET password_hash=:h,failed_logins=0,locked_until=NULL WHERE id=:id"),
                                    {"h": password_hash, "id": user})
-            else:
+            elif args.action == "disable":
                 connection.execute(text("UPDATE editorial_users SET active=FALSE WHERE id=:id"), {"id": user})
+            else:
+                connection.execute(text("UPDATE editorial_users SET can_publish=:allowed WHERE id=:id"),
+                                   {"id": user, "allowed": args.action == "grant-publisher"})
             connection.execute(text("DELETE FROM editorial_sessions WHERE user_id=:id"), {"id": user})
     print("Staff account updated. Existing reviews remain in the audit history.")
 

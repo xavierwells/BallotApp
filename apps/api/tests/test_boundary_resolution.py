@@ -8,6 +8,7 @@ from app.boundary_resolution import (
     BoundaryResolutionReason,
     BoundaryResolutionStatus,
     BoundaryResolver,
+    PostgisBoundaryRepository,
 )
 
 
@@ -95,3 +96,41 @@ def test_no_match_and_invalid_coordinates_are_explicit() -> None:
             latitude=31.11,
             effective_on=date(2026, 11, 3),
         )
+
+
+def test_postgis_query_requires_and_binds_its_publication() -> None:
+    publication_id = UUID("20000000-0000-0000-0000-000000000001")
+
+    class ReadEngine:
+        def connect(self):
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            pass
+
+        def execute(self, statement, parameters):
+            sql = str(statement)
+            assert "subject.publication_id = :publication_id" in sql
+            assert "publisher.publication_id = subject.publication_id" in sql
+            assert parameters["publication_id"] == publication_id
+            assert str(publication_id) not in sql
+            assert parameters["uncertainty_meters"] == 8
+            return self
+
+        def mappings(self):
+            return []
+
+    repository = PostgisBoundaryRepository(ReadEngine(), publication_id=publication_id)
+    assert repository.memberships_at(longitude=-97.90, latitude=31.11,
+                                     effective_on=date(2026, 11, 3), uncertainty_meters=8) == ()
+
+
+def test_postgis_repository_rejects_missing_publication_scope() -> None:
+    with pytest.raises(TypeError):
+        PostgisBoundaryRepository(None)
+    for invalid in (None, "", "not-a-uuid"):
+        with pytest.raises(ValueError, match="publication UUID"):
+            PostgisBoundaryRepository(None, publication_id=invalid)

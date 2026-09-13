@@ -266,7 +266,42 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
 
     assert contains_synthetic_point is True
 
-    resolver = BoundaryResolver(PostgisBoundaryRepository(engine))
+    # Keep a second publication with identical geometry in the same database.
+    # A retained test-postgres service also holds fixtures from earlier runs;
+    # neither may enter this publication's memberships or change their status.
+    other_publication_id, other_authority_id, other_registry_id = (str(uuid4()) for _ in range(3))
+    other_area_id, other_dataset_id, other_boundary_id = (str(uuid4()) for _ in range(3))
+    with engine.begin() as connection:
+        connection.execute(text(
+            "INSERT INTO publications(id,organization_id,slug,name) VALUES(:id,:org,:slug,'Other Test Publication')"
+        ), {"id": other_publication_id, "org": organization_id, "slug": f"other-publication-{test_suffix}"})
+        connection.execute(text(
+            "INSERT INTO election_authorities(id,publication_id,slug,name,authority_type,official_website_url,status) "
+            "SELECT :id,:publication,slug,name,authority_type,official_website_url,status FROM election_authorities WHERE id=:original"
+        ), {"id": other_authority_id, "publication": other_publication_id, "original": authority_id})
+        connection.execute(text(
+            "INSERT INTO authority_source_registry(id,authority_id,slug,name,source_url,source_category) "
+            "SELECT :id,:authority,slug,name,source_url,source_category FROM authority_source_registry WHERE id=:original"
+        ), {"id": other_registry_id, "authority": other_authority_id, "original": registry_entry_id})
+        connection.execute(text(
+            "INSERT INTO geographic_areas(id,authority_id,slug,name,area_type,status) "
+            "SELECT :id,:authority,slug,name,area_type,status FROM geographic_areas WHERE id=:original"
+        ), {"id": other_area_id, "authority": other_authority_id, "original": geographic_area_id})
+        connection.execute(text(
+            "INSERT INTO boundary_datasets(id,publisher_authority_id,subject_authority_id,authority_source_registry_id,"
+            "source_url,checked_at,status,reviewer_reference,reviewed_at) "
+            "SELECT :id,:authority,:authority,:registry,source_url,checked_at,status,reviewer_reference,reviewed_at "
+            "FROM boundary_datasets WHERE id=:original"
+        ), {"id": other_dataset_id, "authority": other_authority_id, "registry": other_registry_id, "original": boundary_dataset_id})
+        connection.execute(text(
+            "INSERT INTO boundary_versions(id,authority_id,geographic_area_id,boundary_dataset_id,effective_from,"
+            "geometry_checksum_sha256,status,verified_by_reference,verified_at,boundary) "
+            "SELECT :id,:authority,:area,:dataset,effective_from,geometry_checksum_sha256,status,verified_by_reference,verified_at,boundary "
+            "FROM boundary_versions WHERE id=:original"
+        ), {"id": other_boundary_id, "authority": other_authority_id, "area": other_area_id,
+            "dataset": other_dataset_id, "original": boundary_version_id})
+
+    resolver = BoundaryResolver(PostgisBoundaryRepository(engine, publication_id=UUID(publication_id)))
     interior_resolution = resolver.resolve(
         longitude=-97.90,
         latitude=31.11,
@@ -278,8 +313,18 @@ def test_provenance_core_upgrades_a_fresh_postgresql_database(monkeypatch: pytes
         effective_on=date(2026, 11, 3),
     )
     assert interior_resolution.status is BoundaryResolutionStatus.MATCHED
-    assert interior_resolution.memberships[0].boundary_version_id == UUID(boundary_version_id)
+    assert tuple(m.boundary_version_id for m in interior_resolution.memberships) == (UUID(boundary_version_id),)
     assert edge_resolution.status is BoundaryResolutionStatus.AMBIGUOUS
+    assert tuple(m.boundary_version_id for m in edge_resolution.memberships) == (UUID(boundary_version_id),)
+    other_resolution = BoundaryResolver(PostgisBoundaryRepository(
+        engine, publication_id=UUID(other_publication_id)
+    )).resolve(longitude=-97.90, latitude=31.11, effective_on=date(2026, 11, 3))
+    assert other_resolution.status is BoundaryResolutionStatus.MATCHED
+    assert tuple(m.boundary_version_id for m in other_resolution.memberships) == (UUID(other_boundary_id),)
+    empty_resolution = BoundaryResolver(PostgisBoundaryRepository(
+        engine, publication_id=uuid4()
+    )).resolve(longitude=-97.90, latitude=31.11, effective_on=date(2026, 11, 3))
+    assert empty_resolution.status is BoundaryResolutionStatus.NOT_FOUND
 
     election_id = str(uuid4())
     ballot_version_id = str(uuid4())

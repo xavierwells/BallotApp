@@ -1,17 +1,26 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
-RUN npm ci --omit=dev --omit=optional
+# Keep downloaded archives between dependency changes; npm ci still validates
+# package-lock.json and creates a clean installation on every uncached run.
+RUN --mount=type=cache,id=ballot-web-npm,target=/root/.npm,sharing=locked \
+    npm ci --omit=dev --omit=optional --prefer-offline
 
 FROM node:24-alpine AS builder
 WORKDIR /app
+COPY package.json package-lock.json .npmrc ./
+RUN --mount=type=cache,id=ballot-web-npm,target=/root/.npm,sharing=locked \
+    npm ci --omit=optional --prefer-offline
+COPY . .
 ARG NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
-COPY package.json package-lock.json .npmrc ./
-RUN npm ci --omit=optional
-COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm test && npm run build
+# Source edits invalidate this RUN layer, but not these BuildKit-owned caches.
+# Cache only .next/cache, never all of .next: the built pages and assets must
+# remain in the image so the unchanged production runner can copy them.
+RUN --mount=type=cache,id=ballot-web-swc,target=/root/.cache/next-swc,sharing=locked \
+    --mount=type=cache,id=ballot-web-next,target=/app/.next/cache,sharing=locked \
+    npm test && npm run build
 
 FROM node:24-alpine AS runner
 WORKDIR /app

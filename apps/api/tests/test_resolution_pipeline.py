@@ -179,6 +179,17 @@ def test_invalid_election_configuration_fails_closed(monkeypatch: pytest.MonkeyP
     assert SYNTHETIC_ADDRESS not in repr(result)
 
 
+def test_configured_pipeline_scopes_spatial_lookup_to_its_publication(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BALLOT_RESOLUTION_DEMO_ENABLED", "false")
+    monkeypatch.setenv("BALLOT_RESOLUTION_PUBLICATION_ID", str(PUBLICATION_ID))
+    monkeypatch.setenv("BALLOT_RESOLUTION_ELECTION_ID", str(ELECTION_ID))
+    monkeypatch.setenv("BALLOT_RESOLUTION_ELECTION_DATE", "2026-11-03")
+    monkeypatch.setenv("GEOCODER_PROVIDER", "disabled")
+    monkeypatch.setattr("app.resolution_pipeline.get_engine", lambda: object())
+    result = pipeline_from_environment()
+    assert result.boundary_resolver.repository.publication_id == PUBLICATION_ID
+
+
 def test_synthetic_demo_is_explicit_and_development_only(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("BALLOT_RESOLUTION_DEMO_ENABLED", "true")
     monkeypatch.setenv("APP_ENV", "development")

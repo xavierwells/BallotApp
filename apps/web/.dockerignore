@@ -2,6 +2,7 @@
 # Never copy host artifacts over that clean, integrity-checked installation.
 node_modules
 .next
+*.tsbuildinfo
 
 # Test tools can create caches in the current directory even though this is a
 # Node application. They are never inputs to the production web image.

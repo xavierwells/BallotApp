@@ -44,7 +44,9 @@ them. Two similarly named County Judge offices must not be merged.
 ## In the dashboard
 
 1. Check and Accept a race in one county; submit normally.
-2. Open another county. Exact matches show **Shared content reviewed**, with a
+2. Open another county. Fully reviewed pages, including those covered by shared
+   reviews, are skipped automatically and shown in gray. Opening one asks for
+   confirmation; it does not reset decisions. Exact matches show **Shared content reviewed**, with a
    link to the source page actually reviewed. Do not Accept them again merely
    to make the progress counter change. You may still flag a discrepancy.
 3. Review the remaining county-specific or differing sections.
@@ -53,6 +55,10 @@ them. Two similarly named County Judge offices must not be merged.
    This is a contest-list/source-coverage check, not another name-by-name check.
 5. Import the county as private records. This does not identify a voter's ballot,
    establish precinct boundaries, or publish anything.
+
+When all content is reviewed, the county opens on an overview. The source PDF,
+county-source confirmation and import remain available there; completed-page
+navigation does not bypass the county confirmation requirement.
 
 The import rechecks the evidence under the publication lock. If evidence changed
 while the page was open, reopen the task and confirm against the refreshed view.

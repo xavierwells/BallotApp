@@ -1,7 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import styles from "./home.module.css";
+import GuideLinks from "./guides/guide-links";
+import { areaGuideCounty, countyDirectoryLabel } from "./guides/browse-links";
+import { createSearchRequests } from "./search-request";
 
 type Citation = { authorityName: string; sourceUrl: string; checkedAt: string; sourceLabel: string };
 type Support = { geographicAreaId: string; areaType: string; name: string; boundaryVersionId: string; explanation: string; source: Citation };
@@ -118,6 +121,7 @@ function BrowseResults({ result }: { result: BrowseResponse }) {
           {item.coverageSources.map((citation) => <CitationView key={`${citation.sourceUrl}-${citation.sourceLabel}`}
             citation={citation} demo={result.demonstration} />)}
           <p className="no-ballot-notice">No ballot has been selected from this area estimate.</p>
+          {areaGuideCounty(item, result.demonstration) && <GuideLinks county={item.name} />}
         </article>)}
       </section>}
       <div className="candidate-list">
@@ -165,49 +169,86 @@ export default function Home() {
   const [mode, setMode] = useState<"address" | "browse">("address");
   const [address, setAddress] = useState("");
   const [resolution, setResolution] = useState<Resolution | null>(null);
-  const [browseAreaType, setBrowseAreaType] = useState<"zip" | "city" | "county">("city");
+  const [browseAreaType, setBrowseAreaType] = useState<"zip" | "city" | "county">("zip");
   const [browseQuery, setBrowseQuery] = useState("");
   const [browseResult, setBrowseResult] = useState<BrowseResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [countySearch, setCountySearch] = useState<string | null>(null);
+  const requests = useRef<ReturnType<typeof createSearchRequests> | null>(null);
+  if (requests.current === null) requests.current = createSearchRequests();
+
+  useEffect(() => {
+    const hide = () => { requests.current?.cancel(); setAddress(""); setResolution(null); setBrowseResult(null); setCountySearch(null); setLoading(false); setLocationLoading(false); };
+    window.addEventListener("pagehide", hide);
+    return () => { requests.current?.cancel(); window.removeEventListener("pagehide", hide); };
+  }, []);
+
+  function clearSearch() {
+    requests.current?.cancel(); setLoading(false); setLocationLoading(false);
+    setError(null); setLocationError(null); setResolution(null); setBrowseResult(null); setCountySearch(null);
+  }
+
+  function startSearch() {
+    return requests.current!.begin(() => {
+      setLoading(false); setLocationLoading(false);
+      setError("The search took too long. Please try again or browse the published county guides.");
+    });
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(null); setResolution(null); setBrowseResult(null); setLoading(true);
+    event.preventDefault(); clearSearch();
+    const submitted = address.trim(); setAddress("");
+    if (submitted.length < 5) { setError("Please enter your registered home address, not just spaces."); return; }
+    setLoading(true); const request = startSearch();
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
       const response = await fetch(`${baseUrl}/api/v1/ballots/resolve`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ address }),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ address: submitted }),
+        signal: request.signal, credentials: "omit", cache: "no-store",
       });
       if (!response.ok) throw new Error(response.status === 422 ? "Please check the address and try again." : "We couldn't check your ballot right now. Please try again later.");
-      setResolution((await response.json()) as Resolution);
+      const result = (await response.json()) as Resolution;
+      if (request.isCurrent()) setResolution(result);
     } catch (requestError) {
-      setError(requestError instanceof TypeError ? "We couldn't reach the ballot service. Check your connection and try again." : requestError instanceof Error ? requestError.message : "We couldn't complete that check. Please try again.");
-    } finally { setAddress(""); setLoading(false); }
+      if (request.isCurrent()) setError(requestError instanceof TypeError ? "We couldn't reach the ballot service. Check your connection and try again." : requestError instanceof Error ? requestError.message : "We couldn't complete that check. Please try again.");
+    } finally { if (request.isCurrent()) { request.finish(); setLoading(false); } }
   }
 
   async function handleBrowse(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(null); setResolution(null); setBrowseResult(null); setLoading(true);
+    event.preventDefault(); clearSearch();
+    const query = browseQuery.trim();
+    if (!query) { setError("Enter a city, county, or ZIP code—not just spaces."); return; }
+    if (browseAreaType === "county") {
+      const county = countyDirectoryLabel(query);
+      if (!county) { setError("Enter a county name, for example Coryell County."); return; }
+      setCountySearch(county); return;
+    }
+    setLoading(true); const request = startSearch();
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
-      const parameters = new URLSearchParams({ areaType: browseAreaType, query: browseQuery });
-      const response = await fetch(`${baseUrl}/api/v1/ballots/browse?${parameters}`);
+      const parameters = new URLSearchParams({ areaType: browseAreaType, query });
+      const response = await fetch(`${baseUrl}/api/v1/ballots/browse?${parameters}`, { signal: request.signal, credentials: "omit", cache: "no-store" });
       if (!response.ok) throw new Error(response.status === 422 ? "Please check the city, county, or ZIP code and try again." : "We couldn't look up this area right now. Please try again later.");
-      setBrowseResult((await response.json()) as BrowseResponse);
+      const result = (await response.json()) as BrowseResponse;
+      if (request.isCurrent()) setBrowseResult(result);
     } catch (requestError) {
-      setError(requestError instanceof TypeError ? "We couldn't reach the ballot service. Check your connection and try again." : requestError instanceof Error ? requestError.message : "We couldn't complete that check. Please try again.");
-    } finally { setLoading(false); }
+      if (request.isCurrent()) setError(requestError instanceof TypeError ? "We couldn't reach the ballot service. Check your connection and try again." : requestError instanceof Error ? requestError.message : "We couldn't complete that check. Please try again.");
+    } finally { if (request.isCurrent()) { request.finish(); setLoading(false); } }
   }
 
   function handleUseLocation() {
-    setError(null); setLocationError(null); setResolution(null); setBrowseResult(null);
+    clearSearch(); setAddress("");
     if (!("geolocation" in navigator)) {
       setLocationError("Location services are not available in this browser. Enter your registered home address instead.");
       return;
     }
     setLocationLoading(true);
+    const request = startSearch();
     navigator.geolocation.getCurrentPosition(async (position) => {
+      if (!request.isCurrent()) return;
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
         const response = await fetch(`${baseUrl}/api/v1/ballots/resolve-location`, {
@@ -217,25 +258,29 @@ export default function Home() {
             latitude: position.coords.latitude,
             accuracyMeters: position.coords.accuracy,
           }),
+          signal: request.signal, credentials: "omit", cache: "no-store",
         });
         if (!response.ok) throw new Error("We couldn't check your ballot right now. Try again or enter your home address.");
-        setResolution((await response.json()) as Resolution);
+        const result = (await response.json()) as Resolution;
+        if (request.isCurrent()) setResolution(result);
       } catch (requestError) {
-        setLocationError("We couldn't check your location right now. Try again or enter your home address.");
-      } finally { setLocationLoading(false); }
+        if (request.isCurrent()) setLocationError("We couldn't check your location right now. Try again or enter your home address.");
+      } finally { if (request.isCurrent()) { request.finish(); setLocationLoading(false); } }
     }, (geolocationError) => {
+      if (!request.isCurrent()) return;
       const messages: Record<number, string> = {
         1: "Location permission was denied. Enter your registered home address instead.",
         2: "Your location is unavailable. Enter your registered home address instead.",
         3: "The location request timed out. Try again or enter your registered home address.",
       };
       setLocationError(messages[geolocationError.code] ?? "Your location could not be read. Enter your registered home address instead.");
-      setLocationLoading(false);
+      request.finish(); setLocationLoading(false);
     }, { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 });
   }
 
   function changeMode(nextMode: "address" | "browse") {
-    setMode(nextMode); setError(null); setLocationError(null); setResolution(null); setBrowseResult(null);
+    if (nextMode === mode) return;
+    clearSearch(); setAddress(""); setMode(nextMode);
   }
 
   return (
@@ -259,7 +304,7 @@ export default function Home() {
             <label htmlFor="address">Your registered home address</label>
             <div className="form-row">
               <input id="address" name="address" autoComplete="street-address" value={address}
-                onChange={(event) => setAddress(event.target.value)} placeholder="123 Main St, Copperas Cove, TX"
+                onChange={(event) => { clearSearch(); setAddress(event.target.value); }} placeholder="123 Main St, Copperas Cove, TX"
                 autoCapitalize="words" spellCheck={false} minLength={5} maxLength={300} required />
               <button type="submit" disabled={loading || locationLoading}>{loading ? "Checking…" : "Show my ballot"}</button>
             </div>
@@ -278,20 +323,23 @@ export default function Home() {
           </div>
         </> : <>
           <form onSubmit={handleBrowse}>
-            <label htmlFor="browse-query">Browse ballots by area</label>
+            <label htmlFor="browse-query">{browseAreaType === "county" ? "Find published county guides" : "Browse ballots by area"}</label>
             <div className="form-row browse-row">
               <select aria-label="Area type" value={browseAreaType}
-                onChange={(event) => setBrowseAreaType(event.target.value as "zip" | "city" | "county") }>
+                onChange={(event) => { clearSearch(); setBrowseQuery(""); setBrowseAreaType(event.target.value as "zip" | "city" | "county"); }}>
                 <option value="zip">ZIP code</option><option value="city">City</option><option value="county">County</option>
               </select>
-              <input id="browse-query" name="query" value={browseQuery} onChange={(event) => setBrowseQuery(event.target.value)}
+              <input id="browse-query" name="query" value={browseQuery} onChange={(event) => { clearSearch(); setBrowseQuery(event.target.value); }}
                 placeholder={browseAreaType === "zip" ? "76522" : browseAreaType === "city" ? "Copperas Cove" : "Coryell County"}
-                minLength={1} maxLength={255} pattern={browseAreaType === "zip" ? "[0-9]{5}(-[0-9]{4})?" : undefined}
+                aria-describedby="browse-help" minLength={1} maxLength={255} pattern={browseAreaType === "zip" ? "\\s*[0-9]{5}(-[0-9]{4})?\\s*" : undefined}
                 title={browseAreaType === "zip" ? "Enter a 5-digit ZIP code or ZIP+4" : undefined} required />
               <button type="submit" disabled={loading}>{loading ? "Searching…" : "Browse ballots"}</button>
             </div>
           </form>
           <p className="privacy">Area browsing shows possible ballots. It cannot determine your exact ballot.</p>
+          <p id="browse-help" className="privacy">{browseAreaType === "zip" ? "ZIP+4 searches use only the five-digit ZIP area, not the more specific extension." :
+            browseAreaType === "county" ? "Search county-wide published guides, not a personal ballot. You may include or omit the word County." :
+            "Reviewed city coverage is not connected yet. You can choose a published county guide below; we will not guess a county from a city name."}</p>
         </>}
       </section>
 
@@ -307,15 +355,26 @@ export default function Home() {
             <UnresolvedComparison resolution={resolution} />
           ) : <p className="notice" role="status">{resolution.message || "We couldn't identify your ballot. Try browsing by area or check with your election office."}</p>}
           <p className="privacy-confirmation">Your address was not saved.</p>
+          {resolution.status !== "resolved" && <p><a href="/guides">Browse published county guides without an address</a>.
+            {" "}Choose a county yourself; these guides are not a match to the address or location you submitted.</p>}
         </section>
       )}
       {browseResult && <section className="results" aria-live="polite">
         {browseResult.demonstration && <div className="demo-banner" role="status"><strong>Example results — not real election information</strong>
           <span>No real ballot or geographic data is shown.</span></div>}
         <BrowseResults result={browseResult} />
+        {!browseResult.demonstration && browseResult.areaType === "county" &&
+          !browseResult.areaMatches.some(item => item.areaType === "county") && countyDirectoryLabel(browseResult.query) &&
+          <GuideLinks key={browseResult.query} county={countyDirectoryLabel(browseResult.query)!} />}
       </section>}
-      {error && <section className="results"><p className="notice error" role="alert">{error}</p></section>}
+      {countySearch && <section className="results" aria-live="polite"><h2>County guide search: {countySearch}</h2>
+        <GuideLinks key={countySearch} county={countySearch} /></section>}
+      {error && <section className="results"><p className="notice error" role="alert">{error}</p>
+        <p><a href="/guides">Browse published county guides instead</a> — not an exact ballot match.</p></section>}
 
+      <section className="results" aria-label="Published county guides">
+        {mode === "browse" ? <GuideLinks /> : <p><a href="/guides">Browse published county election guides</a> — general county coverage, not a personalized ballot.</p>}
+      </section>
       <section id="about" className={styles.about} aria-labelledby="about-title">
         <h2 id="about-title">Why I built this</h2>
         <p>I&apos;m Xavier Wells. I built this app because finding out what&apos;s on the ballot is
@@ -336,6 +395,7 @@ export default function Home() {
           {" · "}<a href="/contribute">What to send and how review works</a></p>
         <p>An independent project. Not an official election website or a candidate endorsement.</p>
         <p>Sources are linked with the results. If a match is uncertain, confirm your ballot with your election office.</p>
+        <p><a href="/editorial/login">Staff login</a> · Review and publishing tools</p>
       </footer>
     </main>
   );

@@ -5,10 +5,35 @@ export type EditableSection = {
 };
 export type SectionDraft = {
   decision: SectionChoice; note: string; editing: boolean; edits: Record<string, string>;
+  decisionBeforeEdit?: SectionChoice;
 };
 export type FieldCorrection = {
   field: "ballotTitle" | "ballotLabel" | "partyLabel"; candidateIndex?: number; value: string;
 };
+
+export function editTranscription(
+  race: EditableSection, draft: SectionDraft | undefined, field: string, value: string,
+  savedDecision?: { decision: string; note: string },
+): SectionDraft | undefined {
+  // A field change must never implicitly choose Flag for the reviewer.
+  if ((draft?.decision ?? savedDecision?.decision) !== "flagged") return draft;
+  const edits = { ...draft?.edits, [field]: value };
+  // Keep raw text while typing (including spaces); normalize only on blur/save.
+  const [name, rawIndex] = field.split(":");
+  const original = field === "ballotTitle" ? race.ballotTitle :
+    (name === "ballotLabel" || name === "partyLabel") ? race.candidates[Number(rawIndex)]?.[name] : undefined;
+  if (original === undefined) throw new Error("Unknown correction field.");
+  if (value === original) delete edits[field];
+  const decisionBeforeEdit = draft?.editing ? draft.decisionBeforeEdit : draft?.decision;
+  if (!Object.keys(edits).length) {
+    // Reverting text restores an explicit unsaved choice, not a new approval.
+    if (decisionBeforeEdit || draft?.note.trim()) return {
+      decision: decisionBeforeEdit ?? "flagged", note: draft?.note ?? "", editing: false, edits: {},
+    };
+    return undefined;
+  }
+  return { decision: "flagged", note: draft?.note ?? savedDecision?.note ?? "", editing: true, edits, decisionBeforeEdit };
+}
 
 export function fieldCorrections(race: EditableSection, draft: SectionDraft): FieldCorrection[] {
   const result: FieldCorrection[] = [];

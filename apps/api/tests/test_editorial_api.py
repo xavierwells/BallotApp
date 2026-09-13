@@ -9,7 +9,8 @@ from app.main import app
 client = TestClient(app)
 
 
-@pytest.mark.parametrize("path", ["me", "batches", f"batches/{uuid4()}", f"batches/{uuid4()}/source"])
+@pytest.mark.parametrize("path", ["me", "batches", f"batches/{uuid4()}", f"batches/{uuid4()}/source",
+                                  "guide-preview", f"guide-preview/{uuid4()}"])
 def test_editorial_reads_require_login_and_are_not_cached(path):
     response = client.get(f"/api/v1/editorial/{path}")
     assert response.status_code == 401
@@ -48,6 +49,11 @@ def test_editorial_openapi_describes_session_auth_and_decisions():
     assert "countySourceReviewed" in schema["components"]["schemas"]["Race"]["properties"]
     assert "requiresCountyConfirmation" in schema["components"]["schemas"]["Batch"]["properties"]
     assert "reviewBasisHash" in schema["components"]["schemas"]["ImportReviewRequest"]["properties"]
+    for path in ("/api/v1/editorial/guide-preview", "/api/v1/editorial/guide-preview/{batch_id}"):
+        assert schema["paths"][path]["get"]["security"]
+        assert list(schema["paths"][path]) == ["get"]
+    assert "409" in schema["paths"]["/api/v1/editorial/guide-preview/{batch_id}"]["get"]["responses"]
+    assert schema["components"]["schemas"]["GuidePreview"]["properties"]["exactMatch"]["const"] is False
 
 
 def test_passwords_have_unique_salts_and_validate():

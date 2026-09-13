@@ -5,6 +5,10 @@ data, and software terms used throughout BallotApp. Definitions describe how
 the project uses a term; election law or an authority's own terminology may be
 more specific.
 
+**Staff site map:** the signed-in navigation page at `/editorial/site-map`.
+It links to review, preview/publishing, public pages and API references. It is
+not a new permission level or a search-engine sitemap.
+
 ## How the main concepts connect
 
 ```text

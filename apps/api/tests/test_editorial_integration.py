@@ -82,6 +82,147 @@ def signed_in(dataset):
     return client
 
 
+def publishable_county(dataset, monkeypatch):
+    monkeypatch.setenv("BALLOT_BROWSE_ORGANIZATION_SLUG", dataset["manifest"]["organizationSlug"])
+    monkeypatch.setenv("BALLOT_BROWSE_PUBLICATION_SLUG", dataset["manifest"]["publicationSlug"])
+    client = signed_in(dataset)
+    base = f"/api/v1/editorial/batches/{dataset['batch']}"
+    assert client.post(base + "/decisions", headers=ORIGIN,
+        json={"raceKeys": ["test-office"], "decision": "accepted"}).status_code == 200
+    assert client.post(base + "/import", headers=ORIGIN).status_code == 200
+    return client
+
+
+def grant_test_publisher(dataset):
+    with dataset["engine"].begin() as connection:
+        connection.execute(text("UPDATE editorial_users SET can_publish=TRUE WHERE username=:u"), {"u": dataset["username"]})
+
+
+def publish_from_status(client, batch_id):
+    base = f"/api/v1/editorial/guide-preview/{batch_id}"
+    status = client.get(base + "/publication")
+    assert status.status_code == 200, status.text
+    state = status.json()
+    response = client.post(base + "/publish", headers=ORIGIN,
+        json={"confirmed": True, "basisHash": state["basisHash"], "expectedEventId": state["currentEventId"]})
+    assert response.status_code == 200, response.text
+    return response.json()["releaseId"]
+
+
+def test_county_guide_publish_replace_withdraw_preserves_history(dataset, monkeypatch):
+    client = publishable_county(dataset, monkeypatch)
+    public = TestClient(app)
+    base = f"/api/v1/editorial/guide-preview/{dataset['batch']}"
+    assert public.get("/api/v1/guides").json()["items"] == []
+    assert public.get("/api/v1/guides", params={"county": "Test County"}).json()["items"] == []
+    status = client.get(base + "/publication").json()
+    assert status["contentReady"] and not status["canPublish"], status
+    request = {"confirmed": True, "basisHash": status["basisHash"], "expectedEventId": None}
+    assert client.post(base + "/publish", headers=ORIGIN, json=request).status_code == 403
+    grant_test_publisher(dataset)
+    assert client.post(base + "/publish", json=request).status_code == 403
+    assert client.post(base + "/publish", headers=ORIGIN, json={**request, "confirmed": False}).status_code == 422
+    assert client.post(base + "/publish", headers=ORIGIN, json={**request, "basisHash": "0" * 64}).status_code == 409
+    from app import county_guides
+    from app.document_storage import DocumentStorageError
+    class MissingStore:
+        def read_bytes(self, key): raise DocumentStorageError("Synthetic missing evidence")
+    with monkeypatch.context() as scoped_patch:
+        scoped_patch.setattr(county_guides, "document_store_from_environment", lambda: MissingStore())
+        assert client.post(base + "/publish", headers=ORIGIN, json=request).status_code == 503
+    assert public.get("/api/v1/guides").json()["items"] == []
+    first_id = publish_from_status(client, dataset["batch"])
+    assert client.post(base + "/publish", headers=ORIGIN, json=request).status_code == 409  # lost-response retry cannot duplicate
+    first = public.get(f"/api/v1/guides/{first_id}")
+    assert first.status_code == 200, first.text
+    frozen = first.json()
+    filtered = public.get("/api/v1/guides", params={"county": " test COUNTY "})
+    assert filtered.status_code == 200 and filtered.json()["items"][0]["releaseId"] == first_id
+    for other_county in ("Test", "Other County", "%", "Test County' OR 1=1 --"):
+        assert public.get("/api/v1/guides", params={"county": other_county}).json()["items"] == []
+    assert frozen["races"][0]["candidates"][0]["ballotLabel"] == "Example Candidate"
+    assert frozen["exactMatch"] is False and frozen["completeBallot"] is False
+    assert frozen["source"]["url"] == "https://example.test/cert.pdf"
+    for private in (dataset["username"], "review_snapshot", "actor_id", "storage_key", "countySourceConfirmedBy"):
+        assert private not in first.text
+    assert "no-store" in first.headers["cache-control"]
+    assert public.get(f"/api/v1/editorial/batches/{dataset['batch']}/source").status_code == 401
+    with dataset["engine"].begin() as connection:
+        newer = deepcopy(dataset["manifest"])
+        newer["sourceDocument"]["retrievedAt"] = "2026-09-12"
+        new_batch = stage_batch(connection, dataset["publication"], dataset["document"], newer)
+    assert public.get(f"/api/v1/guides/{first_id}").json() == frozen  # new unreviewed draft does not hide/change publication
+    assert client.get("/api/v1/editorial/guide-releases").json()[0]["batchId"] == dataset["batch"]
+    assert client.get(base + "/publication").json()["contentReady"] is False
+    next_base = f"/api/v1/editorial/batches/{new_batch}"
+    assert client.post(next_base + "/decisions", headers=ORIGIN,
+        json={"raceKeys": ["test-office"], "decision": "accepted"}).status_code == 200
+    imported = client.post(next_base + "/import", headers=ORIGIN)
+    assert imported.status_code == 200, imported.text
+    second_id = publish_from_status(client, new_batch)
+    assert second_id != first_id
+    assert public.get(f"/api/v1/guides/{first_id}").status_code == 404
+    assert public.get("/api/v1/guides").json()["items"][0]["releaseId"] == second_id
+    state = client.get(f"/api/v1/editorial/guide-preview/{new_batch}/publication").json()
+    withdraw = {"confirmed": True, "expectedEventId": state["currentEventId"], "reason": "PRIVATE withdrawal note"}
+    assert client.post(f"/api/v1/editorial/guide-releases/{first_id}/withdraw", headers=ORIGIN, json=withdraw).status_code == 409
+    assert client.post(f"/api/v1/editorial/guide-releases/{second_id}/withdraw", headers=ORIGIN, json=withdraw).status_code == 200
+    assert public.get(f"/api/v1/guides/{second_id}").status_code == 404
+    assert public.get("/api/v1/guides").json()["items"] == []  # no resurrection of older release
+    assert public.get("/api/v1/guides", params={"county": "Test County"}).json()["items"] == []
+    with dataset["engine"].connect() as connection:
+        assert connection.execute(text("SELECT count(*) FROM county_guide_releases WHERE publication_id=:p"), {"p": dataset["publication"]}).scalar_one() == 2
+        assert connection.execute(text("SELECT count(*) FROM county_guide_events WHERE publication_id=:p"), {"p": dataset["publication"]}).scalar_one() == 3
+        assert connection.execute(text("SELECT count(*) FROM ballot_versions WHERE publication_id=:p"), {"p": dataset["publication"]}).scalar_one() == 0
+    for table in ("county_guide_releases", "county_guide_events"):
+        with pytest.raises(DatabaseError):
+            with dataset["engine"].begin() as connection:
+                connection.execute(text(f"DELETE FROM {table} WHERE publication_id=:p"), {"p": dataset["publication"]})
+
+
+def test_county_guide_freezes_facts_but_source_revocation_hides_release(dataset, monkeypatch):
+    client = publishable_county(dataset, monkeypatch)
+    grant_test_publisher(dataset)
+    release_id = publish_from_status(client, dataset["batch"])
+    public = TestClient(app)
+    with dataset["engine"].begin() as connection:
+        connection.execute(text("UPDATE candidates SET ballot_label='Changed canonical label' WHERE publication_id=:p"), {"p": dataset["publication"]})
+    assert public.get(f"/api/v1/guides/{release_id}").json()["races"][0]["candidates"][0]["ballotLabel"] == "Example Candidate"
+    status = client.get(f"/api/v1/editorial/guide-preview/{dataset['batch']}/publication").json()
+    assert not status["contentReady"] and status["state"] == "published"
+    assert client.get("/api/v1/editorial/guide-releases").json()[0]["releaseId"] == release_id
+    with dataset["engine"].begin() as connection:
+        connection.execute(text("UPDATE authority_source_registry SET approval_status='retired',permitted_use='none' "
+            "WHERE id=(SELECT authority_source_registry_id FROM documents WHERE id=:d)"), {"d": dataset["document"]})
+    assert public.get(f"/api/v1/guides/{release_id}").status_code == 404
+    assert public.get("/api/v1/guides").json()["items"] == []
+
+
+def test_county_publication_cannot_cross_staff_or_publication_scope(dataset, monkeypatch):
+    client = publishable_county(dataset, monkeypatch)
+    grant_test_publisher(dataset)
+    release_id = publish_from_status(client, dataset["batch"])
+    with dataset["engine"].begin() as connection:
+        organization = connection.execute(text("SELECT organization_id FROM publications WHERE id=:p"), {"p": dataset["publication"]}).scalar_one()
+        other = connection.execute(text("INSERT INTO publications(id,organization_id,slug,name) VALUES(gen_random_uuid(),:o,:s,'Other') RETURNING id"),
+            {"o": organization, "s": f"other-{uuid4().hex[:8]}"}).scalar_one()
+        username = f"publisher-{uuid4().hex[:10]}"
+        create_user(connection, other, username, PASSPHRASE)
+        connection.execute(text("UPDATE editorial_users SET can_publish=TRUE WHERE username=:u"), {"u": username})
+    outsider = signed_in({**dataset, "username": username})
+    base = f"/api/v1/editorial/guide-preview/{dataset['batch']}"
+    assert outsider.get(base + "/publication").status_code == 404
+    assert outsider.get("/api/v1/editorial/guide-releases").json() == []
+    assert outsider.post(base + "/publish", headers=ORIGIN,
+        json={"confirmed": True, "basisHash": "a" * 64, "expectedEventId": None}).status_code == 404
+    assert outsider.post(f"/api/v1/editorial/guide-releases/{release_id}/withdraw", headers=ORIGIN,
+        json={"confirmed": True, "expectedEventId": 1, "reason": "Other publication"}).status_code == 404
+    monkeypatch.setenv("BALLOT_BROWSE_PUBLICATION_SLUG", "missing-publication")
+    assert TestClient(app).get(f"/api/v1/guides/{release_id}").status_code == 404
+    assert TestClient(app).get("/api/v1/guides", params={"county": "Test County"}).json()["items"] == []
+    assert TestClient(app).get("/api/v1/guides").json()["items"] == []
+
+
 def test_private_drafts_review_flag_resume_import_and_logout(dataset):
     client = signed_in(dataset)
     base = f"/api/v1/editorial/batches/{dataset['batch']}"
@@ -142,6 +283,8 @@ def test_new_revision_loses_approval_and_other_publication_is_hidden(dataset):
     outsider = signed_in({**dataset, "username": other_name})
     assert outsider.get(old).status_code == 404
     assert outsider.get(old + "/source").status_code == 404
+    assert outsider.get(f"/api/v1/editorial/guide-preview/{dataset['batch']}").status_code == 404
+    assert outsider.get("/api/v1/editorial/guide-preview").json() == []
     assert outsider.post(old + "/decisions", headers=ORIGIN, json={"raceKeys": ["test-office"], "decision": "accepted"}).status_code == 404
     assert outsider.post(old + "/review", headers=ORIGIN, json={"confirmed": True,
         "sections": [{"raceKey": "test-office", "decision": "accepted"}]}).status_code == 404
@@ -163,6 +306,51 @@ def test_failed_login_lockout_and_session_revocation(dataset):
     second = signed_in(dataset)
     assert first.get("/api/v1/editorial/me").status_code == 401
     assert second.get("/api/v1/editorial/me").status_code == 200
+
+
+def test_private_guide_preview_reads_imported_records_and_hides_drafts(dataset):
+    client = signed_in(dataset)
+    base = f"/api/v1/editorial/batches/{dataset['batch']}"
+    preview_url = f"/api/v1/editorial/guide-preview/{dataset['batch']}"
+    assert client.get("/api/v1/editorial/guide-preview").json() == []
+    assert client.get(preview_url).status_code == 404
+    client.post(base + "/decisions", headers=ORIGIN, json={"raceKeys": ["test-office"], "decision": "accepted"})
+    assert client.get(preview_url).status_code == 404
+    assert client.post(base + "/import", headers=ORIGIN).status_code == 200
+    result = client.get(preview_url)
+    assert result.status_code == 200, result.text
+    preview = result.json()
+    assert preview["exactMatch"] is False and preview["publicationAllowed"] is False
+    assert preview["races"][0]["candidates"][0]["ballotLabel"] == "Example Candidate"
+    assert preview["races"][0]["recordedAcceptances"][0]["reviewer"] == dataset["username"]
+    assert preview["races"][0]["sourcePage"] == "1"
+    assert "no-store" in result.headers["cache-control"]
+    assert client.get("/api/v1/editorial/guide-preview").json()[0]["batchId"] == dataset["batch"]
+    with dataset["engine"].begin() as connection:
+        organization = connection.execute(text("SELECT organization_id FROM publications WHERE id=:p"), {"p": dataset["publication"]}).scalar_one()
+        other_publication = connection.execute(text(
+            "INSERT INTO publications(id,organization_id,slug,name) VALUES(gen_random_uuid(),:o,:s,'Other preview') RETURNING id"
+        ), {"o": organization, "s": f"other-preview-{uuid4().hex[:8]}"}).scalar_one()
+        other_user = f"other-preview-{uuid4().hex[:8]}"
+        create_user(connection, other_publication, other_user, PASSPHRASE)
+    outsider = signed_in({**dataset, "username": other_user})
+    assert outsider.get(preview_url).status_code == 404
+    assert outsider.get("/api/v1/editorial/guide-preview").json() == []
+    with dataset["engine"].begin() as connection:
+        candidate = connection.execute(text("SELECT id FROM candidates WHERE publication_id=:p"), {"p": dataset["publication"]}).scalar_one()
+        assert str(candidate) == preview["races"][0]["candidates"][0]["id"]
+        assert connection.execute(text("SELECT count(*) FROM ballot_versions WHERE publication_id=:p"), {"p": dataset["publication"]}).scalar_one() == 0
+        newer = deepcopy(dataset["manifest"])
+        newer["races"][0]["ballotTitle"] = "Newer unimported title"
+        stage_batch(connection, dataset["publication"], dataset["document"], newer)
+    assert client.get("/api/v1/editorial/guide-preview").json() == []
+    assert client.get(preview_url).json()["current"] is False
+    # Historical review must not conceal canonical drift.
+    with dataset["engine"].begin() as connection:
+        connection.execute(text("UPDATE candidates SET ballot_label='Changed canonical label' WHERE id=:id"), {"id": candidate})
+    assert client.get(preview_url).status_code == 409
+    client.post("/api/v1/editorial/logout", headers=ORIGIN)
+    assert client.get(preview_url).status_code == 401
 
 
 def test_section_corrections_preserve_other_reviews_and_survive_setup(dataset):
@@ -322,6 +510,12 @@ def test_shared_reviews_need_county_confirmation_and_preserve_import_evidence(da
         "decision": "flagged", "note": "Later question about this transcription"}).status_code == 200
     historical = client.get(beta).json()
     assert historical["races"] == result.json()["races"]
+    guide = client.get(f"/api/v1/editorial/guide-preview/{shared['id']}")
+    assert guide.status_code == 200, guide.text
+    assert guide.json()["countySourceConfirmedBy"] == dataset["username"]
+    assert guide.json()["races"][0]["recordedAcceptances"][0]["kind"] == "shared"
+    assert guide.json()["races"][0]["recordedAcceptances"][0]["county"] == "Alpha County"
+    assert guide.json()["races"][0]["recordedAcceptances"][0]["at"] == evidence["at"].replace("+00:00", "Z")
     assert client.post(beta + "/import", headers=ORIGIN).json()["imported"] is True
     with pytest.raises(DatabaseError, match="immutable"):
         with dataset["engine"].begin() as connection:

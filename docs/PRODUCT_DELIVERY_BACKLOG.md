@@ -10,10 +10,45 @@ UI implement per-section Accept/Flag, individual notes, typed transcription
 corrections, one master submission, and preserved reviews of unchanged sections.
 Shared state/federal race content can reuse a human review from another county,
 with a separate county-source confirmation and immutable import receipt.
-Local checks: 142 API tests passed (13 database tests skipped), five frontend
-tests passed, production web build and mocked browser flows passed. Migration
-018's database execution, updated UI acceptance and actual content review still
-need operator confirmation. Epic 3's data dependencies remain open.
+Completed-page navigation now skips reviewed content, confirms reopening, and
+shows a county overview when finished without bypassing county confirmation.
+Sections show plain headings and candidate tables until Flag is selected, then
+prefilled inline edit fields with original values shown; saving and later acceptance stay separate.
+Operator reports county review/import complete on 2026-09-12. The new staff-only
+guide preview reads canonical imported records and historical review receipts;
+it does not publish facts or establish voter applicability. Local checks:
+166 API tests passed (14 database tests skipped), 27 frontend tests passed,
+production build and mocked desktop/mobile preview flows passed. Operator Docker
+results: 176 passed, 1 failed, 16 warnings. The preview tests passed; the older
+migration test exposed unscoped boundary lookup across retained test publications.
+Publication-scoped lookup and exact-membership regression checks are implemented;
+the full PostgreSQL rerun was initially pending. The owner subsequently accepted the
+real-data preview visually and reported warm builds improving from ~15 minutes
+to ~1 minute. The next slice implements migration 019, owner-granted publishing
+access, explicit publish/replace/withdraw controls, immutable release snapshots,
+and public county guides. New drafts leave the published version unchanged until
+explicit replacement/withdrawal. Local checks: 183 API tests passed (17 database
+tests skipped), 31 frontend tests passed, production build and offline migration
+render passed. These were followed by operator-reported green checks and
+acceptance of the county-guide publication slice on 2026-09-12 ("looks good.
+approved."). No new exact test count or release identifier was supplied;
+database receipts remain the record of actual releases. The next implemented
+slice connects published guides to area browsing and adds homepage staff login
+leading to a staff site map. Epic 3's data dependencies remain open.
+
+Navigation-slice local checks: 189 API tests passed (17 database tests skipped,
+one existing warning), 36 frontend tests passed, production build and mocked
+desktop/mobile browser checks passed. The new county-filter database assertions
+and operator navigation acceptance remain pending; no new migration is required.
+
+The owner accepted staff sign-in and requested search verification. Read-only
+live checks found all three published guides but an older running API without
+the county filter. ZIP+4 normalization, direct county-guide search, cancellation
+of stale requests/location callbacks, whitespace validation and guide-search
+normalization are implemented. Search checks: 201 API tests passed (17 skipped,
+one warning), 40 frontend tests passed, production build and mocked browser
+regressions passed. Rebuild API and web; city geography and exact ballots still
+need reviewed data. See [`SEARCH_VERIFICATION.md`](SEARCH_VERIFICATION.md).
 
 ## Product outcomes
 
@@ -202,12 +237,16 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 - [x] Repair document registration (`publications.id`), require active retention approval before storage, and reuse the downloaded PDF. Operator confirmed the database tests and setup of three private county batches.
 - [x] Add versioned private review batches and `/editorial` source/table comparison for Bell, Coryell and Lampasas; one setup command provisions local staff access and unreviewed intake.
 - [x] Add section decisions, saved progress, flags and immutable per-race coverage. Each section has Accept/Flag and its own notes, saved by one master submission. No automatic verification or publication.
-- [x] Add in-browser office/name/party transcription corrections and carry forward unchanged section reviews with identical source/context. Original text and correction history remain; changed sections need later acceptance. Migration 017 and tests are implemented; database/operator execution remains pending.
-- [x] Reuse exact shared state/federal race content reviews across county tasks without recording duplicate/fake human decisions. Keep county coverage separate; migration 018 retains the import review basis. Identity/content, distinct-human, flag, stale-evidence and receipt tests are implemented; database/operator execution remains pending. See [`SHARED_RACE_REVIEW.md`](SHARED_RACE_REVIEW.md).
+- [x] Resume at the first unfinished page, dim completed pages and confirm reopening. Successful completion advances past reviewed pages; partial/flagged/corrected pages and failed saves stay put. All-complete counties open on an overview with source confirmation/import intact. Frontend unit, production-build and mocked desktop/mobile browser checks pass; no schema change.
+- [x] Add in-browser office/name/party transcription corrections and carry forward unchanged section reviews with identical source/context. Original text and correction history remain; changed sections need later acceptance. Migration 017 is included in the later operator-reported green checks and completed review/import workflow.
+- [x] Keep the compact plain heading and candidate/party table until Flag is selected, then show prefilled office/name fields and party dropdowns in place without another edit-mode button. Changes become pending corrections, retain original values, and still require master submission and later acceptance. Flag-first field display, Accept/undo restoring plain text, revert, no-op focus, failed-save preservation and read-only imported records are covered by frontend checks; no API/schema change.
+- [x] Reuse exact shared state/federal race content reviews across county tasks without recording duplicate/fake human decisions. Keep county coverage separate; migration 018 retains the import review basis. Identity/content, distinct-human, flag, stale-evidence and receipt tests are implemented; included in later operator-reported green checks. See [`SHARED_RACE_REVIEW.md`](SHARED_RACE_REVIEW.md).
 - [ ] Extend shared review to cross-county local authorities once stable authority identifiers are available; ambiguous local office names remain county-scoped.
-- [ ] Add controlled corrections/supersession of already imported canonical records. Conflicts still stop import; browser corrections only change private unimported drafts.
+- [ ] Add controlled corrections/supersession of already imported canonical records. Deferred by owner on 2026-09-12: the current certification dataset is expected to be stable, so this is not the next delivery gate. Conflicts still stop import; browser corrections only change private unimported drafts. Material errors can require withdrawal pending controlled repair.
 - [x] Add provisioned, publication-scoped staff accounts, hashed sessions, origin protection, private PDFs and documented/tested review APIs without new runtime dependencies.
 - [ ] Build authenticated editorial roles: researcher, verifier, editor, publisher, administrator.
+- [x] Add a separately granted publisher capability and explicit county-guide publish/replace/withdraw actions; no automatic grants or publication. Owner-only initially, expandable by local operator command. Operator reported checks green and accepted the slice on 2026-09-12. See [`COUNTY_GUIDE_PUBLICATION.md`](COUNTY_GUIDE_PUBLICATION.md).
+- [x] Add homepage staff login, a post-login staff site map, and return links from review/preview. Reuse existing accounts and API permissions; no provisioning or role expansion. See [`BROWSING_AND_STAFF_NAVIGATION.md`](BROWSING_AND_STAFF_NAVIGATION.md).
 - [ ] Build candidate, office, race, proposition, and questionnaire editorial forms on top of the provenance schema.
 - [ ] Add candidate outreach templates, deadlines, reminders, and immutable communication log.
 - [ ] Add research-task queues driven by missing evidence, verification state, election urgency, and overdue-source alerts; make the editorial dashboard the default alert destination.
@@ -248,6 +287,9 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 ### Tasks
 
 - [ ] Build ballot-result pages and links to race, office, candidate, and proposition pages.
+- [x] Add a private certification guide preview at `/editorial/preview`, reading imported canonical records with source/page links and historical review evidence. The reader is staff-only and read-only. Operator visual acceptance and later green checks reported. See [`PRIVATE_GUIDE_PREVIEW.md`](PRIVATE_GUIDE_PREVIEW.md).
+- [x] Add `/guides` and a documented public county-guide read API backed only by explicit frozen releases. Names/parties/offices, attribution and dates are public; staff details/PDF copies stay private. Exact-ballot and completeness claims remain false. Operator accepted this slice on 2026-09-12; general public civic APIs remain broader follow-up work.
+- [x] Connect reviewed county area cards to published guides, add a no-address county directory, and offer an unfiltered public-guide route from unresolved addresses. City coverage is not invented; ZIP rankings never establish a personal ballot. This slice requires no migration or new evidence review.
 - [ ] Build source panels, “last verified” displays, and information-missing states.
 - [ ] Build neutral office explainers and proposition templates with official wording and sourced financial impact.
 - [ ] Build public read API endpoints and OpenAPI examples from the published data model.
@@ -312,6 +354,10 @@ The 2026 pilot stops at the launch-operations epic. The expansion epic is intent
 
 ### Tasks
 
+- [ ] Implement and rehearse the November 16 static-archive cutover defined in `POST_ELECTION_TRANSITION_2026.md`, including rollback through November 18 and verified Droplet shutdown on November 19.
+- [ ] Build a deterministic static exporter that includes only published result/status/source records and excludes addresses, private evidence, drafts, staff data, secrets, and administrative routes.
+- [ ] Define and review first-party aggregate pilot counters. Describe them as requests/actions rather than unique people; do not retain IPs, address/query values, coordinates, cookies, user agents, referrers, or session identifiers for analytics.
+- [ ] Add an automated public-artifact allowlist/private-file check and prove the static site operates with the API and database unavailable.
 - [ ] Archive and preserve election/ballot versions, source documents, corrections, and certification status.
 - [ ] Add official-results ingestion and historical results presentation.
 - [ ] Add multi-tenant roles, database row-level security, branding, and publication configuration.
@@ -332,15 +378,16 @@ Epics 0–2 are complete for the initial-launch policy. **Epic 3 remains active*
 its resolver and import foundations are implemented, while authoritative
 November boundaries, fully verified local contests, and exact ballot styles
 remain open. The private certification download and registration have succeeded,
-and three county review batches are loaded. Completed human review and canonical
-promotion have not been reported.
+and three county review batches were reviewed/imported by operator report. The
+real-data private preview has been accepted visually.
 
-**Next: exercise the new Epic 4 workspace with the real private certification.**
-Run the isolated database tests, back up, rebuild/apply migration 018, then
-continue the existing county tasks at `/editorial`; no repeat setup/download is
-needed. Exercise a section flag/correction and subsequent acceptance against
-the real PDF, confirm shared content appears in another county, then perform its
-separate county-source confirmation before import. Next build the publication
-handoff; do not treat certification review as ballot applicability. Canonical
-correction/supersession is separate follow-up work, not a silent overwrite.
+**Current: area-to-guide navigation and a staff site map.** The owner reported
+checks green and accepted the publication slice. Rebuild the API/web services
+for county directory links and homepage staff login; sign-in now opens the site
+map rather than dropping directly into review. Reuse existing accounts and
+reviews. No repeat setup/download or new migration is needed. Do not treat
+certification review as ballot applicability. The owner deferred canonical
+correction/supersession; it is not a gate for this navigation slice.
+See [`BROWSING_AND_STAFF_NAVIGATION.md`](BROWSING_AND_STAFF_NAVIGATION.md).
 See [`EDITORIAL_VERIFICATION_WORKFLOW.md`](EDITORIAL_VERIFICATION_WORKFLOW.md).
+See [`COUNTY_GUIDE_PUBLICATION.md`](COUNTY_GUIDE_PUBLICATION.md) for this slice's commands and acceptance checks.

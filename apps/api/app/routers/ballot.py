@@ -1,7 +1,7 @@
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.ballot_browsing import BallotBrowser, browser_from_environment
 
@@ -28,6 +28,11 @@ class AddressResolutionRequest(BaseModel):
         description="Used only for this request and discarded before the response is returned.",
         examples=["914 Example Street, Copperas Cove, TX 76522"],
     )
+
+    @field_validator("address", mode="before")
+    @classmethod
+    def trim_address(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 
 class LocationResolutionRequest(BaseModel):
@@ -91,6 +96,7 @@ def resolve_location(
     description=(
         "Lists ballots associated with a user-selected ZIP code, city, or county. "
         "Browse results are coarse area matches and never claim to be the voter's exact ballot."
+        " ZIP+4 uses only the five-digit ZIP area; the response query and message disclose that scope."
     ),
     response_model=BallotBrowseResponse,
     response_model_by_alias=True,
@@ -102,6 +108,9 @@ def browse_ballots(
 ) -> BallotBrowseResponse:
     """Browse a coarse area without accepting or inferring a voter address."""
     normalized_query = query.strip()
-    if area_type is BrowseAreaType.ZIP and not re.fullmatch(r"\d{5}(?:-\d{4})?", normalized_query):
+    if area_type is BrowseAreaType.ZIP and not re.fullmatch(r"[0-9]{5}(?:-[0-9]{4})?", normalized_query):
         raise HTTPException(status_code=422, detail="ZIP code must use 12345 or 12345-6789 format")
+    if area_type is BrowseAreaType.ZIP and len(normalized_query) > 5:
+        result = browser.browse(area_type, normalized_query[:5])
+        return result.model_copy(update={"message": "ZIP+4 was searched using only its five-digit ZIP area. " + result.message})
     return browser.browse(area_type, normalized_query)

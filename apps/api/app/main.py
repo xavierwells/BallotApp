@@ -8,6 +8,8 @@ from fastapi.responses import JSONResponse
 from app.routers.ballot import router as ballot_router
 from app.routers.health import router as health_router
 from app.routers.editorial import router as editorial_router
+from app.routers.guides import router as guides_router
+from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 app = FastAPI(
@@ -49,6 +51,21 @@ async def sanitized_validation_error(
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(ballot_router, prefix="/api/v1")
 app.include_router(editorial_router, prefix="/api/v1")
+app.include_router(guides_router, prefix="/api/v1")
+
+
+@app.middleware("http")
+async def public_guide_responses(request: Request, call_next):
+    if request.url.path != "/api/v1/guides" and not request.url.path.startswith("/api/v1/guides/"):
+        return await call_next(request)
+    try:
+        response = await call_next(request)
+    except (SQLAlchemyError, RuntimeError, ValidationError):
+        response = JSONResponse(status_code=503, content={"detail": "County guides are temporarily unavailable."})
+    # Withdrawal must not leave cacheable copies in our browser/proxy paths.
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
+    return response
 
 
 @app.middleware("http")

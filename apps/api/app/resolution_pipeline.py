@@ -382,7 +382,7 @@ def pipeline_from_environment() -> ResolutionPipeline | SyntheticDemoResolutionP
     return ResolutionPipeline(
         context=context,
         geocoder=geocoder_from_environment(),
-        boundary_resolver=BoundaryResolver(PostgisBoundaryRepository(engine)),
+        boundary_resolver=BoundaryResolver(PostgisBoundaryRepository(engine, publication_id=context.publication_id)),
         ballot_matcher=BallotMatcher(PostgresBallotRequirementRepository(engine)),
         ballot_catalog=PostgresBallotCatalog(engine),
     )

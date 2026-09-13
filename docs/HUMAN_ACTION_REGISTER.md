@@ -24,10 +24,25 @@ non-sensitive reference to where the operator keeps it.
 ## Latest confirmed progress
 
 The operator confirmed `85 passed, 10 warnings` and successful setup of three
-private county tasks under the 015–016 workflow. The private PDF is downloaded,
-checksum-matched and registered, and staff provisioning is complete. This does
-not complete H-014 or establish a new CI run. Migrations 017–018's section
-correction/shared-review workflows still need database and operator verification.
+private county tasks under the 015–016 workflow. On 2026-09-12 the operator
+reported completed county review/import after using the updated workspace.
+H-014 is complete by operator report; the database's signed-in decisions and
+immutable import receipts remain the evidence of exactly what was reviewed.
+This is not confirmation of a new CI run or of public ballot publication.
+The owner subsequently accepted the real-data private preview visually and
+confirmed the warm-build improvement (~15 minutes to ~1 minute). The isolated
+PostgreSQL rerun was subsequently reported green and the county-guide publication
+slice accepted on 2026-09-12 ("looks good. approved."). No exact new test count or
+release identifier was supplied; the database retains the actual grant/release
+receipts. No account grant or publication was performed by the agent.
+Area-to-guide navigation and staff login/site map are now implemented; their
+new tests and UI acceptance are the next operator checks, with no new migration.
+The owner subsequently accepted staff sign-in. Search verification found the
+live API image lacked the county filter; both API and web need rebuilding, not
+another human review or publication. Read-only checks confirmed three public
+county guides and working within-guide filters. The current operator checklist
+is in [Search verification](SEARCH_VERIFICATION.md); exact address/ballot and
+city coverage are not declared complete by those checks.
 
 The [verification workflow](EDITORIAL_VERIFICATION_WORKFLOW.md) supplies two
 test/upgrade commands and first-time setup instructions. Existing tasks need no
@@ -38,6 +53,7 @@ packet is an optional checklist, not an approval bypass.
 
 | ID | Status | Human action | Timing | Evidence to record | Blocks |
 | --- | --- | --- | --- | --- | --- |
+| H-018 | Complete | Owner reported green checks and accepted the county-guide publication slice. | Accepted 2026-09-12. | Operator confirmation in the project conversation; actual grant/release receipts remain authoritative in the database. No exact new counts or release IDs were supplied and no agent publication occurred. | Publication-slice acceptance only; not exact-ballot eligibility or internet deployment. |
 | H-001 | Ready | Ask Coryell County Elections for the current November 3, 2026 voting-precinct GIS layer or legal descriptions; confirm that it supersedes or validates the TLC primary reference; request written terms for private retention, derived geometry, public attribution, and any automated checks. | Now | Date, office/role contacted, reply disposition, source URL or non-sensitive permission reference. | Exact precinct resolution and Coryell ballot-style mapping. |
 | H-002 | Ready | Make the equivalent current-boundary and reuse request to Bell County Elections. Verify the county's linked ArcGIS layer, completeness, effective date, export method, and November applicability. | Now | Same fields as H-001. | Exact Bell County resolution. |
 | H-003 | Ready | Make the equivalent current-boundary and reuse request to Lampasas County Elections. | Now | Same fields as H-001. | Exact Lampasas County resolution. |
@@ -47,11 +63,14 @@ packet is an optional checklist, not an approval bypass.
 | H-007 | Ready | Contact the League of Women Voters of Texas or participating local League about a VOTE411 data export/media partnership, historical retention, attribution, correction handling, and permission to expose derived fields through BallotApp APIs. | Now; follow up when its guide is published. | Contact date and organizational role, requested fields, permitted uses, retention/redistribution terms, attribution, correction process. | Automated VOTE411 intake; manual links remain allowed after review. |
 | H-008 | Waiting | Audit VOTE411, Ballotpedia, BallotReady, and other relevant guides against the official Copperas Cove ballot using the privacy-safe method in `PRODUCT_POSITIONING_AND_VALIDATION.md`. | Once official ballots are available and again 14–21 days before Election Day. | Aggregate contest-level coverage only; never the tested address. | Evidence-based product positioning and expansion decision. |
 | H-009 | Complete | Owner approved private unreviewed intake, one human for basic official facts, and two distinct humans total for interpretive content. Pilot staff accounts are locally provisioned and publication-scoped. | Decided 2026-09-11. | Owner approval; editorial workflow; migrations 015–016 and authenticated review code. | Policy no longer blocks basic-fact review. Recruit a second human before interpretive publication. |
-| H-010 | Complete | Multi-source candidacy architecture approved: preserve certification and ballot citations; store party label on the election-specific candidacy; keep certification-only records draft and visibly incomplete. | Decided 2026-09-11. | Migration `014_candidate_sources`, staging documentation, and owner approval. | No longer blocks technical promotion; H-014 review still blocks reviewed promotion. |
+| H-010 | Complete | Multi-source candidacy architecture approved: preserve certification and ballot citations; store party label on the election-specific candidacy; keep certification-only records draft and visibly incomplete. | Decided 2026-09-11. | Migration `014_candidate_sources`, staging documentation, and owner approval. | No longer blocks technical promotion; H-014 review/import now reported complete. |
 | H-011 | Decision | Decide whether BallotApp may emit aggregated coarse-area signals for unresolved outcomes, covering `source_conflict`, `ambiguous`, `needs_review`, and `not_found`. | Before operational analytics or conflict-volume monitoring. | Granularity, minimum aggregation threshold, retention, access, deletion, and privacy approval. | Privacy-safe resolution monitoring. |
+| H-015 | Ready | Approve the pilot metric definitions, bot/test filtering, retention, and minimum publication thresholds. Treat counts as requests/actions, not unique people; omit metrics rather than delaying the post-election cutover. | Before public measurement begins. | Approved definitions and retention; explicit confirmation that address/query values, coordinates, IPs, cookies, user agents, referrers, and session identifiers are excluded from analytics. | Privacy-safe static pilot summary. |
+| H-016 | Scheduled | On November 15 review the static artifact and backups; on November 16 authorize static cutover; on November 19 authorize Droplet destruction only after the rollback window and restore evidence pass. | November 15–19, 2026. | Artifact checksum, result/source/status review, backup/restore evidence, DNS/HTTPS check, shutdown time and final billing confirmation. | Predetermined end of dynamic hosting without data loss. |
+| H-017 | Decision | Before the first Private Email renewal, choose whether to retain the USD 14.88/year project mailbox or replace it with Namecheap free forwarding to an owner-approved private inbox. Forwarding receives at the project aliases but cannot send as the project domain. | Before Private Email renewal. | Renewal/cancellation decision; if forwarding, approved non-public destination, MX/SPF transition record and unrelated-account delivery test. | Stable post-election correction contact without unintentionally publishing the owner's Gmail address. |
 | H-012 | Waiting | Perform keyboard, zoom, mobile, screen-reader, and reduced-motion testing and record the release accessibility review. | Before public beta and every release. | Test date, tester reference, browser/assistive technology, findings, remediation owner. | Public launch. |
 | H-013 | Decision | Select a search-as-you-type address provider or approve a self-hosted address dataset after privacy, license, cost, retention, and operational review. | Optional; native saved-address autofill is sufficient for the pilot. | Provider decision and complete source/service review. | Full address typeahead only. |
-| H-014 | Ready | Continue the three loaded county tasks at `/editorial`. Xavier can review basic official facts once; matching state/federal content reuses that human review in other counties. Review unique/differing sections, then confirm each receiving county's contest list against its source before import. Typed corrections need later acceptance. | Before reviewed canonical promotion; download/setup complete. Validate migration 018 first. | Actual human decisions, source checksum/pages, correction history and immutable import receipt distinguishing shared content from county coverage. AI checks cannot be recorded as Xavier's human review. | Reviewed promotion of 108 county-scoped race entries and 216 candidate entries; exact duplicates do not require repeated content review. |
+| H-014 | Complete | Operator reports the three county reviews/imports complete. Shared content review remains distinct from receiving-county source confirmation; typed corrections required later acceptance. | Reported 2026-09-12. | Operator confirmation in the project conversation; persisted signed-in decisions and immutable import receipts remain authoritative. No AI review was submitted or substituted. | Unblocks private real-data guide preview; does not establish complete ballots, geographic applicability or public publication. |
 
 ## Source-response procedure
 
@@ -82,8 +101,11 @@ Owner confirmed Namecheap email delivery and SPF/DKIM/DMARC PASS for the main
 mailbox. Local pages link `info@copperascovevotes.org` for contributions/questions
 and `corrections@copperascovevotes.org` for mistakes; both reach Xavier's mailbox.
 `/contribute` explains evidence, email retention and review, not an upload form.
-The owner selected `copperascovevotes.org` through Namecheap, with a preferred
-hosting budget under USD 10/month. See [the setup plan](DOMAIN_AND_EMAIL_SETUP.md).
+The owner selected `copperascovevotes.org` through Namecheap and a minimal
+US-based DigitalOcean pilot, initially 1 GiB / 1 shared vCPU, with production
+builds excluded and resizing only if measurements require it. The intended pilot
+hosting window currently runs through November 2026. No web deployment or DNS
+change is authorized yet. See [the setup plan](DOMAIN_AND_EMAIL_SETUP.md).
 The website is not ready for deployment. After explicit owner approval and
 deployment, test these links and public pages over HTTPS before inviting submissions.
 

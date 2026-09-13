@@ -27,27 +27,42 @@ _Synthetic interface preview. The names, boundaries, ballot, and source shown ab
 | Public Next.js entry page | Working |
 | Address and browser-location resolution contracts | Working; real election selection awaits approved data/configuration |
 | ZIP, city, and county browsing contracts | Working; reviewed ZIP 76522 Census estimate is available |
-| PostgreSQL/PostGIS provenance schema | Operator confirmed the 015–016 workflow; migrations through `018_shared_race_reviews` are ready for database testing |
+| PostgreSQL/PostGIS provenance schema | County review/import complete by operator report; migration `019_county_guide_publication` release-control slice accepted after operator-reported green checks |
 | Versioned official-ballot manifest intake | Draft-only foundation implemented |
-| Texas 2026 certification staging | Bell, Coryell, and Lampasas: 108 race entries / 216 candidate entries; private PDF downloaded and checksum-matched; human review pending |
-| Publication safeguards | Citations plus current-content staff review: one human for official facts, two for interpretive content; publication UI still pending |
+| Texas 2026 certification staging | Bell, Coryell, and Lampasas: 108 race entries / 216 candidate entries; county review/import complete by operator report; only explicit releases appear publicly |
+| Publication safeguards | One human for official facts, two for interpretive content; separate, explicitly granted publisher capability for county-guide release/withdrawal |
 | Synthetic resolved, ambiguous, and source-conflict scenarios | Available for development review |
 | Editorial login and verification dashboard | Three private county tasks loaded; section decisions/corrections, shared race reviews and separate county-source confirmation implemented |
+| Private real-data guide preview | Imported offices, candidates/parties, citations and historical review evidence at `/editorial/preview`; staff-only, not a complete or personalized ballot |
+| Public county guides | `/guides` and public read APIs expose only explicit frozen releases; publication slice accepted by operator |
+| Guide browsing and staff navigation | Reviewed county area cards link to published guides; homepage Staff login opens a site map after sign-in |
 | Published November 2026 ballot content | Awaiting review, ballot styles, local contests, and authoritative applicability evidence |
 
 See the [delivery backlog](docs/PRODUCT_DELIVERY_BACKLOG.md), [launch scope](docs/LAUNCH_SCOPE_2026.md), and [human action register](docs/HUMAN_ACTION_REGISTER.md) for the detailed state of the work.
 
-The latest operator-reported database/container tests returned **85 passed,
-10 warnings**, followed by successful setup of three private county tasks.
+The operator reported checks green and approved the county-guide publication
+slice on 2026-09-12, after the earlier boundary-isolation regression was fixed.
+No new exact test count or release identifier was supplied.
 Setup and test results do not constitute editorial review.
 The [verification workflow](docs/EDITORIAL_VERIFICATION_WORKFLOW.md)
 provides setup commands for the new source-comparison workspace. Draft loading
 does not require completed review; public publication does.
 
-Latest engineering checks: **142 passed, 13 skipped, 1 warning** (no local
-PostGIS), five frontend unit tests passed, production web build passed, and
-mocked browser review/correction and shared-review flows passed on desktop and mobile.
-Migration 018's database-backed integration and operator acceptance remain pending.
+Latest search-slice checks: **201 passed, 17 skipped, 1 warning** (no local
+PostGIS), 40 frontend unit tests passed, and production web build passed.
+The new county-filter integration assertions still need the operator's isolated
+PostgreSQL run. Mocked browser checks cover login/site map, logout, county/ZIP
+guide links, missing/withdrawn/error states, privacy and mobile layout. Prior
+publication checks also used mocked desktop/mobile browser flows.
+The operator reports review/import complete and accepted the preview/publication
+slice. Actual release receipts remain in the database, not inferred from this README.
+See [county-guide publication](docs/COUNTY_GUIDE_PUBLICATION.md) for the upgrade,
+one-time owner permission grant, and acceptance checks. No records were automatically published.
+See [browsing and staff navigation](docs/BROWSING_AND_STAFF_NAVIGATION.md) for the
+current no-migration update; existing accounts and completed reviews are reused.
+Read-only live checks found the running API still lacked the county filter;
+rebuild both API and web for this update. See [search verification](docs/SEARCH_VERIFICATION.md)
+for findings, fixed ZIP+4/stale-request behavior, and the remaining city/address data limits.
 
 ## Architecture
 
@@ -81,6 +96,9 @@ docker compose up --build
 | Service | Local URL |
 | --- | --- |
 | Web application | <http://localhost:3000> |
+| Staff login → site map | <http://localhost:3000/editorial/login> (existing editorial account) |
+| Staff site map | <http://localhost:3000/editorial/site-map> |
+| Published county guides | <http://localhost:3000/guides> (no login needed) |
 | Staff review workspace | <http://localhost:3000/editorial> (provisioned account required) |
 | Swagger UI | <http://localhost:8080/docs> |
 | ReDoc | <http://localhost:8080/redoc> |
@@ -143,7 +161,13 @@ docker compose run --rm -it api python -m app.cli.prepare_pilot_review --usernam
 
 It prompts privately for a passphrase. Then sign in at `/editorial`, compare
 source pages, choose Accept or Flag per section, and use **Submit review** at the
-bottom to save. Flags have their own notes and optional typed corrections.
+bottom to save. Sections normally show a plain heading and candidate/party table.
+Select **Flag** to reveal prefilled title/name fields and a party dropdown in
+that section. Editing a value creates a pending correction, with its original
+shown alongside. Flags have their own notes. Nothing autosaves.
+Completed pages are gray and skipped automatically; reopening one asks for
+confirmation. Finished counties open on an overview with source confirmation
+and import still available.
 Corrected sections need a later acceptance; unchanged section reviews are
 preserved. [Shared race reviews](docs/SHARED_RACE_REVIEW.md) avoid repeated name/party
 checks across counties while retaining a separate county-source confirmation.

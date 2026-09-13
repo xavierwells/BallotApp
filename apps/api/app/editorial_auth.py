@@ -84,7 +84,7 @@ def require_editor(token: str | None = Depends(cookie_scheme)) -> dict:
         raise HTTPException(401, "Sign in to the editorial workspace.")
     with get_engine().connect() as connection:
         user = connection.execute(text(
-            "SELECT u.id,u.publication_id,u.username FROM editorial_sessions s "
+            "SELECT u.id,u.publication_id,u.username,u.can_publish FROM editorial_sessions s "
             "JOIN editorial_users u ON u.id=s.user_id "
             "WHERE s.token_hash=:t AND s.expires_at>CURRENT_TIMESTAMP AND u.active=TRUE"
         ), {"t": token_hash(token)}).mappings().one_or_none()

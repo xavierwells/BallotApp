@@ -11,6 +11,9 @@ docker compose up --build
 The stack exposes only the web (`3000`) and API (`8080`) ports. PostgreSQL and Valkey remain private to the Docker network.
 Compose applies the forward-only schema migration before starting the API. To apply it explicitly, run `docker compose run --rm migrate` (or `make db-upgrade`).
 
+For small changes to an already-running stack, see [Faster production rebuilds](BUILD_PERFORMANCE.md)
+for service-only commands and how the production build caches work.
+
 ## Single server / bare metal
 
 Install Docker Engine and the Compose plugin on a supported Linux host. Supply production values through the host's protected environment or a secrets manager, then run:

@@ -1,0 +1,30 @@
+# Keep host environments and generated Python bytecode out of COPY app/migrations.
+# Running local tests must not invalidate otherwise unchanged application layers.
+.venv
+venv
+**/.venv
+**/venv
+__pycache__
+**/__pycache__
+*.py[cod]
+**/*.py[cod]
+.pytest_cache
+**/.pytest_cache
+.mypy_cache
+**/.mypy_cache
+.ruff_cache
+**/.ruff_cache
+.coverage
+.coverage.*
+htmlcov
+
+# Local secrets and repository metadata are not image inputs.
+.env
+.env.*
+**/.env
+**/.env.*
+.git
+*.log
+
+# Do not exclude app/, migrations/, tests/, alembic.ini, or requirements files:
+# the runtime, migration, and test targets still need their normal inputs.
